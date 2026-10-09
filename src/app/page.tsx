@@ -1,6 +1,7 @@
 import { MyGigs } from "@/components/MyGigs";
 import { NewGigForm } from "@/components/NewGigForm";
 import { ScrollStory } from "@/components/story/ScrollStory";
+import { AgentSection } from "@/components/agent/AgentSection";
 
 export default function Home() {
   return (
@@ -17,6 +18,7 @@ export default function Home() {
         </div>
       </section>
       <ScrollStory />
+      <AgentSection />
       <section id="start" className="scroll-mt-24 grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <NewGigForm />
         <MyGigs />
