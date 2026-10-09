@@ -76,39 +76,53 @@ export function htmlToText(html: string): string {
 
 const clip = (s: string) => (s.length > MAX_CHARS ? `${s.slice(0, MAX_CHARS)}\n[truncated]` : s);
 
-async function fetchGitHubRepo(owner: string, repo: string): Promise<string> {
+async function fetchGitHubRepo(owner: string, repo: string): Promise<{ content: string; summary: string }> {
   const api = `https://api.github.com/repos/${owner}/${repo}`;
   const gh = { Accept: "application/vnd.github+json", ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) };
   const meta = JSON.parse((await safeFetch(api, gh)).body) as { description: string | null; default_branch: string; language: string | null; pushed_at: string };
   const [tree, readme, runs] = await Promise.all([
     safeFetch(`${api}/git/trees/${meta.default_branch}?recursive=1`, gh).then((r) => JSON.parse(r.body) as { tree: { path: string; type: string }[]; truncated: boolean }),
-    safeFetch(`${api}/readme`, { ...gh, Accept: "application/vnd.github.raw" }).then((r) => r.body).catch(() => "(no README)"),
+    safeFetch(`${api}/readme`, { ...gh, Accept: "application/vnd.github.raw" }).then((r) => r.body).catch(() => null),
     safeFetch(`${api}/actions/runs?branch=${meta.default_branch}&per_page=5`, gh)
       .then((r) => (JSON.parse(r.body) as { workflow_runs: { name: string; status: string; conclusion: string | null; created_at: string }[] }).workflow_runs)
       .catch(() => null),
   ]);
   const ci = runs === null ? "(could not read CI runs)" : runs.length === 0 ? "(no CI runs)" : runs.map((r) => `${r.name}: ${r.conclusion ?? r.status} (${r.created_at})`).join("\n");
   const files = tree.tree.filter((t) => t.type === "blob").map((t) => t.path);
-  return [
-    `GITHUB REPO ${owner}/${repo}: ${meta.description ?? "(no description)"}; language ${meta.language ?? "unknown"}; last push ${meta.pushed_at}`,
-    `FILES (${files.length}${tree.truncated ? "+, truncated" : ""}):\n${files.slice(0, 300).join("\n")}`,
-    `LATEST CI RUNS ON ${meta.default_branch}:\n${ci}`,
-    `README:\n${readme.slice(0, 6_000)}`,
-  ].join("\n\n");
+  const ciSummary = runs?.length ? runs.slice(0, 3).map((r) => `${r.name} ${r.conclusion ?? r.status}`).join(", ") : "no CI runs";
+  return {
+    summary: `${files.length} files, ${readme ? "README found" : "no README"}, ${ciSummary}`,
+    content: [
+      `GITHUB REPO ${owner}/${repo}: ${meta.description ?? "(no description)"}; language ${meta.language ?? "unknown"}; last push ${meta.pushed_at}`,
+      `FILES (${files.length}${tree.truncated ? "+, truncated" : ""}):\n${files.slice(0, 300).join("\n")}`,
+      `LATEST CI RUNS ON ${meta.default_branch}:\n${ci}`,
+      `README:\n${(readme ?? "(no README)").slice(0, 6_000)}`,
+    ].join("\n\n"),
+  };
 }
 
-export async function gatherEvidence(submission: string): Promise<Evidence[]> {
+export async function gatherEvidence(submission: string, onProgress: (line: string) => void = () => {}): Promise<Evidence[]> {
+  const urls = extractUrls(submission);
+  if (urls.length === 0) onProgress("The submission has no links to open");
   return Promise.all(
-    extractUrls(submission).map(async (url): Promise<Evidence> => {
+    urls.map(async (url): Promise<Evidence> => {
       try {
         const gh = new URL(url).hostname === "github.com" && url.match(/^https?:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/?#]|$)/);
-        if (gh) return { url, ok: true, content: clip(await fetchGitHubRepo(gh[1], gh[2])) };
+        if (gh) {
+          const repo = await fetchGitHubRepo(gh[1], gh[2]);
+          onProgress(`Opened ${url}: ${repo.summary}`);
+          return { url, ok: true, content: clip(repo.content) };
+        }
         const { body, type } = await safeFetch(url);
         const text = type.includes("html") ? htmlToText(body) : type.startsWith("text/") || type.includes("json") ? body : null;
-        if (text === null) return { url, ok: false, error: `unsupported content type ${type}` };
+        if (text === null) throw new Error(`unsupported content type ${type}`);
+        const title = text.match(/^TITLE: (.+)$/m)?.[1];
+        onProgress(`Opened ${url}: page loaded${title ? ` ("${title.slice(0, 80)}")` : ""}`);
         return { url, ok: true, content: clip(text) };
       } catch (err) {
-        return { url, ok: false, error: err instanceof Error ? err.message : String(err) };
+        const error = err instanceof Error ? err.message : String(err);
+        onProgress(`Couldn't open ${url}: ${error}`);
+        return { url, ok: false, error };
       }
     }),
   );
