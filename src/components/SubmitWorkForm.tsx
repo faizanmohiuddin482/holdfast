@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "./api";
 
-export function SubmitWorkForm({ gigId }: { gigId: string }) {
+export function SubmitWorkForm({ token }: { token: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,23 +13,22 @@ export function SubmitWorkForm({ gigId }: { gigId: string }) {
     setBusy(true);
     setError(null);
     try {
-      await post(`/api/gigs/${gigId}/submit`, { submission: new FormData(e.currentTarget).get("submission") });
+      await post(`/api/t/${token}/submit`, { submission: new FormData(e.currentTarget).get("submission") });
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
-    } finally {
       setBusy(false);
     }
   }
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <div className="prompt">
-        <textarea name="submission" required rows={6} className="input" disabled={busy}
-          placeholder="What you delivered, with links: repo, deployed URL, docs. The agent opens each link and checks it against the criteria." />
-      </div>
-      {error && <p className="text-sm text-warn">{error}</p>}
-      <button className="btn" disabled={busy}>{busy ? <span className="cursor">Agent checking the work</span> : "Submit for verification"}</button>
+      <label className="label" htmlFor="submission">What did you deliver?</label>
+      <textarea id="submission" name="submission" required minLength={10} rows={5} className="input" disabled={busy}
+        placeholder="Describe the work and paste links: GitHub repo, live site, documents. The AI opens every link." />
+      <p className="hint">Public links work best. The AI can read GitHub repos, including their CI results.</p>
+      {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+      <button className="btn" disabled={busy}>{busy ? "Sending…" : "Submit for review"}</button>
     </form>
   );
 }

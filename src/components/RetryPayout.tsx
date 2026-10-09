@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "./api";
 
-export function RetryPayout({ gigId }: { gigId: string }) {
+export function RetryPayout({ token }: { token: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -11,7 +11,7 @@ export function RetryPayout({ gigId }: { gigId: string }) {
     setBusy(true);
     setError(null);
     try {
-      await post(`/api/gigs/${gigId}/retry-payout`);
+      await post(`/api/t/${token}/retry-payout`);
       router.refresh();
     } catch (err) {
       setError((err as Error).message);
@@ -19,11 +19,10 @@ export function RetryPayout({ gigId }: { gigId: string }) {
     }
   }
   return (
-    <div className="space-y-3 border-2 border-warn bg-bg p-4">
-      <h3 className="t-h2 text-warn">Payout didn&apos;t go through</h3>
-      <p className="text-sm">The client&apos;s payment was captured, but sending it to the freelancer failed. Retrying only resends the payout; nothing is charged again.</p>
-      {error && <p className="text-sm text-warn">{error}</p>}
-      <button className="btn" onClick={retry} disabled={busy}>{busy ? <span className="cursor">Sending payout</span> : "Retry payout"}</button>
+    <div className="space-y-3">
+      <p className="text-sm text-ink-2">Your payment went through, but sending it to the freelancer failed. Retrying only resends the payout; you won&apos;t be charged again.</p>
+      {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+      <button className="btn" onClick={retry} disabled={busy}>{busy ? "Sending…" : "Retry payout"}</button>
     </div>
   );
 }
