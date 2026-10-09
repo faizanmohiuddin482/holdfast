@@ -3,6 +3,7 @@ import { getGig, listEvents, type GigEvent } from "@/lib/db";
 import { formatMoney, PLATFORM_FEE_BPS } from "@/lib/settle";
 import { FundButtons } from "@/components/FundButtons";
 import { SettlePanel } from "@/components/SettlePanel";
+import { RetryPayout } from "@/components/RetryPayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { SubmitWorkForm } from "@/components/SubmitWorkForm";
 
@@ -117,6 +118,8 @@ export default async function GigPage({ params }: { params: Promise<{ id: string
           )}
         </section>
       )}
+
+      {gig.status === "failed" && gig.captureId && !gig.payoutBatchId && <RetryPayout gigId={gig.id} />}
 
       <section>
         <h2 className="t-h2 mb-3">Receipts</h2>

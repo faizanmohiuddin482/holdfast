@@ -88,9 +88,7 @@ export async function settle(id: string, releasePercent: number, actor: "client"
       captured = true;
       updateGig(id, { captureId: cap.captureId });
       logEvent(id, "paypal", "captured", `${fmt(plan.captureCents)} captured` + (plan.returnedCents ? `; ${fmt(plan.returnedCents)} returned to the client` : ""));
-      const payout = await paypal.payoutToFreelancer(gig.id, gig.freelancerEmail, plan.payoutCents, gig.currency, gig.verdict?.messageToFreelancer || note);
-      updateGig(id, { payoutBatchId: payout.batchId });
-      logEvent(id, "paypal", "payout_sent", `${fmt(plan.payoutCents)} to ${gig.freelancerEmail} (fee ${fmt(plan.feeCents)}), batch ${payout.batchId}`);
+      await payFreelancer(gig, plan.captureCents, gig.verdict?.messageToFreelancer || note);
     }
     transition(id, "settling", "settled");
   } catch (err) {
@@ -98,6 +96,35 @@ export async function settle(id: string, releasePercent: number, actor: "client"
     // so park it as failed for manual payout follow-up.
     transition(id, "settling", captured ? "failed" : "verified");
     logEvent(id, "paypal", "settlement_failed", `${captured ? "Captured but payout failed" : "No funds moved; safe to retry"}: ${err}`);
+    throw err;
+  }
+  return mustGet(id);
+}
+
+/** Pay the freelancer their share of a capture (minus the platform fee). */
+async function payFreelancer(gig: Gig, capturedCents: number, note: string) {
+  const { payoutCents, feeCents } = planSettlement(capturedCents, 100);
+  const fmt = (c: number) => formatMoney(c, gig.currency);
+  const payout = await paypal.payoutToFreelancer(gig.id, gig.freelancerEmail, payoutCents, gig.currency, note);
+  updateGig(gig.id, { payoutBatchId: payout.batchId });
+  logEvent(gig.id, "paypal", "payout_sent", `${fmt(payoutCents)} to ${gig.freelancerEmail} (fee ${fmt(feeCents)}), batch ${payout.batchId}`);
+}
+
+/**
+ * Retry only the payout for a gig whose capture succeeded but payout failed.
+ * Pays from the amount PayPal reports as captured, never captures again.
+ */
+export async function retryPayout(id: string) {
+  const gig = mustGet(id);
+  if (!gig.captureId || gig.payoutBatchId) throw new EscrowError("This gig has no captured payment waiting to be paid out");
+  if (!transition(id, "failed", "settling")) throw new EscrowError(`Gig is ${gig.status}, not waiting for a payout retry`);
+  try {
+    const captured = await paypal.getCaptureCents(gig.captureId);
+    await payFreelancer(gig, captured.cents, `Holdfast: ${gig.title}. Payment released after verification.`);
+    transition(id, "settling", "settled");
+  } catch (err) {
+    transition(id, "settling", "failed");
+    logEvent(id, "paypal", "payout_retry_failed", String(err));
     throw err;
   }
   return mustGet(id);

@@ -110,13 +110,24 @@ export async function payoutToFreelancer(gigId: string, email: string, cents: nu
         {
           recipient_type: "EMAIL",
           receiver: email,
-          amount: money(cents, currency),
+          // Payouts v1 spells it `currency`, unlike Orders/Payments v2 (`currency_code`).
+          amount: { value: (cents / 100).toFixed(2), currency },
           note: note.slice(0, 4000),
           sender_item_id: gigId,
         },
       ],
     },
-    `payout-${gigId}`,
+    // No fixed request id: PayPal itself rejects a reused sender_batch_id, which is what stops a double payout,
+    // and a fresh id lets a corrected request through after a validation failure.
   );
   return { batchId: res.batch_header.payout_batch_id, status: res.batch_header.batch_status };
+}
+
+/** What PayPal actually captured, so a payout retry pays from the real captured amount. */
+export async function getCaptureCents(captureId: string): Promise<{ cents: number; currency: string }> {
+  const res = await fetch(`${BASE}/v2/payments/captures/${captureId}`, { headers: { Authorization: `Bearer ${await accessToken()}` } });
+  const text = await res.text();
+  if (!res.ok) throw new PayPalError("get capture", res.status, text);
+  const { amount } = JSON.parse(text) as { amount: { value: string; currency_code: string } };
+  return { cents: Math.round(Number(amount.value) * 100), currency: amount.currency_code };
 }
