@@ -69,6 +69,16 @@ API's message. `release_payment` is annotated destructive; `get_gig` read-only.
 - `.mts` files run directly on Node 22.6+ (type stripping); tsconfig includes them.
 - SDK: `@modelcontextprotocol/sdk` pinned to 1.30.1.
 
+## Landing page: "Let your AI agent hire for you"
+
+A section after the scroll story, same calm style, no "escrow" wording, showing only what the server does:
+- A chat mock-up of the demo: the human's request, the agent's steps (checklist drafted with questions, a hold link
+  for the human, freelancer invited, verdict, release within policy).
+- Three guardrails: money in always needs you; the agent can't spend over your limit; it can't override the AI's recommendation.
+- "Connect it": a copyable Claude Code command
+  `claude mcp add holdfast -e HOLDFAST_URL=<this site> -- node <path to repo>/mcp/index.mts`
+  and the equivalent Claude Desktop JSON. `<this site>` is filled with the page's own origin.
+
 ## Testing
 
 Unit: `gigView` never leaks the client token or link to the freelancer, and `next_step` per stage × role;
