@@ -162,8 +162,22 @@ export function transition(id: string, from: GigStatus, to: GigStatus): boolean 
   return db.prepare("UPDATE gigs SET status = ? WHERE id = ? AND status = ?").run(to, id, from).changes === 1;
 }
 
-export function logEvent(gigId: string, actor: GigEvent["actor"], type: string, detail: string) {
-  db.prepare("INSERT INTO events (gig_id, actor, type, detail, at) VALUES (?, ?, ?, ?, ?)").run(gigId, actor, type, detail, new Date().toISOString());
+/** Returns the new event id. */
+export function logEvent(gigId: string, actor: GigEvent["actor"], type: string, detail: string): number {
+  const res = db.prepare("INSERT INTO events (gig_id, actor, type, detail, at) VALUES (?, ?, ?, ?, ?)").run(gigId, actor, type, detail, new Date().toISOString());
+  return Number(res.lastInsertRowid);
+}
+
+// A verification run is identified by its work_submitted event. Only the latest run, while the gig is
+// still verifying, may record its outcome; a run that was interrupted and superseded changes nothing.
+const isCurrentRun = "status = 'verifying' AND (SELECT MAX(id) FROM events WHERE gig_id = gigs.id AND type = 'work_submitted') = ?";
+
+export function finishVerification(id: string, runId: number, verdict: Verdict): boolean {
+  return db.prepare(`UPDATE gigs SET verdict = ?, status = 'verified' WHERE id = ? AND ${isCurrentRun}`).run(JSON.stringify(verdict), id, runId).changes === 1;
+}
+
+export function failVerification(id: string, runId: number): boolean {
+  return db.prepare(`UPDATE gigs SET status = 'funded' WHERE id = ? AND ${isCurrentRun}`).run(id, runId).changes === 1;
 }
 
 /** The activity log: everything except live progress lines. */

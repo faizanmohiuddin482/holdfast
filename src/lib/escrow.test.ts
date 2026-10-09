@@ -144,3 +144,37 @@ describe("lookup", () => {
     expect(escrow.lookup("missing")).toBeNull();
   });
 });
+
+describe("a late verification run", () => {
+  function controlledRuns() {
+    const finishers: ((j: Judgement) => void)[] = [];
+    vi.mocked(verifyDeliverable).mockImplementation(() => new Promise<Judgement>((resolve) => finishers.push(resolve)));
+    return finishers;
+  }
+
+  it("is discarded when the freelancer resubmitted after it was interrupted", async () => {
+    const finish = controlledRuns();
+    const gig = await fundedGig();
+    await escrow.submitWork(gig.id, "first try");
+    escrow.recoverStale(getGig(gig.id)!, Date.now() + 6 * 60_000);
+    await escrow.submitWork(gig.id, "second try");
+
+    finish[0]({ ...judgement, summary: "verdict for the FIRST try" });
+    await new Promise((r) => setTimeout(r, 10));
+    expect(getGig(gig.id)!).toMatchObject({ status: "verifying", verdict: null });
+
+    finish[1]({ ...judgement, summary: "verdict for the SECOND try" });
+    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
+    expect(getGig(gig.id)!.verdict!.summary).toBe("verdict for the SECOND try");
+  });
+
+  it("does not attach a verdict to a gig that went back to funded", async () => {
+    const finish = controlledRuns();
+    const gig = await fundedGig();
+    await escrow.submitWork(gig.id, "first try");
+    escrow.recoverStale(getGig(gig.id)!, Date.now() + 6 * 60_000);
+    finish[0](judgement);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(getGig(gig.id)!).toMatchObject({ status: "funded", verdict: null });
+  });
+});

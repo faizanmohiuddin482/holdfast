@@ -33,7 +33,8 @@ async function generate<T>(schema: z.ZodType<T>, system: string, prompt: string)
         const res = await gemini().models.generateContent({
           model,
           contents: prompt,
-          config: { systemInstruction: system, responseMimeType: "application/json", responseJsonSchema: jsonSchema },
+          // Bounded so a run can never outlive the 5-minute stale window (2 attempts x 3 models x 45 s).
+          config: { systemInstruction: system, responseMimeType: "application/json", responseJsonSchema: jsonSchema, httpOptions: { timeout: 45_000 } },
         });
         if (!res.text) throw new Error(`no answer (${res.candidates?.[0]?.finishReason ?? "no candidates"})`);
         const parsed = schema.safeParse(JSON.parse(res.text));

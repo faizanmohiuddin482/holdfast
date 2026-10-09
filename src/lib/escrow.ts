@@ -1,6 +1,6 @@
 // Gig lifecycle: draft (review criteria) -> fund (PayPal hold) -> submit -> AI verifies (background) -> settle.
 import { draftCriteria, verifyDeliverable, type Verdict } from "./agent";
-import { createGig, getGig, getGigByToken, lastEventAt, logEvent, transition, updateGig, type Clarification, type Gig } from "./db";
+import { createGig, failVerification, finishVerification, getGig, getGigByToken, lastEventAt, logEvent, transition, updateGig, type Clarification, type Gig } from "./db";
 import * as paypal from "./paypal";
 import { decisionFor, formatMoney, planSettlement } from "./settle";
 import { computeRelease } from "./verdict";
@@ -86,11 +86,11 @@ export async function completeFunding(id: string, orderId: string) {
 export async function submitWork(id: string, submission: string) {
   const gig = mustGet(id);
   if (!transition(id, "funded", "verifying")) throw new EscrowError(`Gig is ${gig.status}; work can only be submitted once it's funded`);
-  logEvent(id, "freelancer", "work_submitted", submission.slice(0, 500));
-  void runVerification(gig, submission);
+  const runId = logEvent(id, "freelancer", "work_submitted", submission.slice(0, 500));
+  void runVerification(gig, submission, runId);
 }
 
-async function runVerification(gig: Gig, submission: string) {
+async function runVerification(gig: Gig, submission: string, runId: number) {
   const id = gig.id;
   try {
     const judgement = await verifyDeliverable(
@@ -99,15 +99,14 @@ async function runVerification(gig: Gig, submission: string) {
     );
     const release = computeRelease(gig.criteria, judgement.results);
     const verdict: Verdict = { ...judgement, releasePercent: release.percent, releaseWorking: release.working };
-    updateGig(id, { verdict });
-    if (!transition(id, "verifying", "verified")) return; // recovered as stale meanwhile
+    if (!finishVerification(id, runId, verdict)) return; // interrupted, or superseded by a resubmission
     logEvent(id, "agent", "verdict", `${decisionFor(verdict.releasePercent)} ${verdict.releasePercent}% (${verdict.confidence} confidence): ${verdict.summary}`);
     if (process.env.HOLDFAST_AUTO_RELEASE === "true" && verdict.releasePercent === 100 && verdict.confidence === "high") {
       logEvent(id, "agent", "auto_release", "All criteria met with high confidence; releasing without waiting for the client");
       await settle(id, 100, "agent");
     }
   } catch (err) {
-    if (transition(id, "verifying", "funded")) logEvent(id, "agent", "verification_failed", err instanceof Error ? err.message : String(err));
+    if (failVerification(id, runId)) logEvent(id, "agent", "verification_failed", err instanceof Error ? err.message : String(err));
     else console.error(err);
   }
 }
