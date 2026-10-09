@@ -46,7 +46,7 @@ export function CriteriaEditor({ token, criteria, clarifications }: { token: str
         {rows.map((r, i) => (
           <li key={i} className="flex flex-col gap-2 sm:flex-row sm:items-start">
             <span className="hidden w-6 pt-2 text-xs font-semibold text-muted sm:block">c{i + 1}</span>
-            <textarea aria-label={`Criterion ${i + 1}`} rows={2} className="input flex-1" value={r.text} onChange={(e) => update(i, { text: e.target.value })} />
+            <textarea aria-label={`Criterion ${i + 1}`} rows={2} className="input flex-1 [field-sizing:content] min-h-16" value={r.text} onChange={(e) => update(i, { text: e.target.value })} />
             <div className="flex items-center gap-2">
               <select aria-label={`Weight of criterion ${i + 1}`} className="input w-auto" value={r.weight} onChange={(e) => update(i, { weight: Number(e.target.value) })}>
                 {[1, 2, 3, 4, 5].map((w) => <option key={w} value={w}>Weight {w}</option>)}

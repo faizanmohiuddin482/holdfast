@@ -10,25 +10,20 @@ recommends how much to release: all, part, or none.
 
 ## How it works
 
-1. **Brief → criteria.** The client describes the gig. The agent turns the brief into 3-8 objectively
-   checkable acceptance criteria and flags any ambiguities *before* money is committed.
-2. **Hold, don't pay.** The client funds via PayPal Checkout with `intent: AUTHORIZE`. PayPal places a hold;
-   nothing is captured.
-3. **Deliver.** The freelancer submits a description plus links (repo, deployed site, docs).
-4. **Verify.** Holdfast fetches every link in the submission (GitHub repos through the GitHub API, other pages as
-   text, with guards so a submission can't point it at internal addresses). Gemini then judges each criterion
-   (`met`, `partially_met`, `not_met`, `cannot_verify`) with evidence. It returns a weighted release
-   percentage, feedback for the freelancer and, if it recommends less than 100%, a neutral dispute summary.
-   The submission and fetched pages are treated as untrusted input, so instructions embedded in them are ignored.
-5. **Settle.** The client approves the agent's percentage or overrides it. Overrides are logged. Holdfast then:
-   - **captures** that share of the authorization (`final_capture: true`, so the rest goes back to the client
-     automatically), or **voids** the hold at 0%;
-   - **pays the freelancer** through PayPal Payouts, minus a platform fee.
+1. **Agree.** The client describes the job. The AI turns it into a weighted checklist and flags unclear points.
+   The client edits the checklist and answers the questions before paying anything.
+2. **Hold.** The client pays through PayPal Checkout with `intent: AUTHORIZE`. PayPal holds the money; nothing is captured.
+3. **Invite.** The client sends the freelancer their own link. Each side has a private link and sees only their own
+   next step, plus a money tracker that shows where the money is right now.
+4. **Check.** The freelancer submits links. Holdfast opens them (GitHub repos through the GitHub API, including CI results;
+   other pages as text, with SSRF guards) and both pages show the progress live. Gemini judges each checklist item
+   with evidence and the source link; text that tries to instruct the reviewer is flagged and ignored.
+5. **Release.** The app computes the release % from the item weights (met = full, partly met = half), shows the working,
+   and the client approves or adjusts it. PayPal captures that share (the rest goes back automatically) or voids the hold
+   at 0%, then pays the freelancer through Payouts, minus a platform fee.
 
    With `HOLDFAST_AUTO_RELEASE=true`, a 100% verdict with high confidence is settled by the agent with no
    client step. That is the agentic-commerce mode.
-
-Every step is written to an activity log on the gig page.
 
 ## PayPal APIs used
 
@@ -57,7 +52,8 @@ Requires Node 22.5+ (uses the built-in `node:sqlite`).
 1. Create a PayPal sandbox app at [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox.
    In the sandbox accounts list you'll have a **personal** account (use it to pay as the client) and a
    **business** account (the platform). Create a second personal account for the freelancer and use its email
-   when you create a gig.
+   when you create a gig. Use sandbox accounts registered in the **US**: PayPal doesn't process payments within
+   India, and Indian sandbox accounts fail at checkout with "Things don't appear to be working at the moment".
 2. Get a free Gemini API key at [aistudio.google.com](https://aistudio.google.com) → Get API key.
 3. Set up and start the app:
 
@@ -77,7 +73,8 @@ npm run build
 
 ## Limits (it's a hackathon build)
 
-- No accounts or auth. Client and freelancer actions share one page, labelled by role.
+- No accounts. Each gig has a private client link and a private freelancer link; whoever holds a link acts as that role.
+  The home page lists only gigs created in the current browser.
 - Authorizations last 29 days with a 3-day honor period. Long gigs would need PayPal reauthorization.
 - If the capture succeeds but the payout fails, the gig is parked as "Needs attention" rather than retried
   automatically, so money is never moved twice.
