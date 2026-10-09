@@ -10,7 +10,7 @@ export const STORY = [
   },
   {
     title: "PayPal holds the money",
-    body: "You pay into escrow. PayPal authorizes the payment and holds it. You're not charged, and the freelancer can see the money is really there.",
+    body: "You approve a PayPal payment hold. PayPal authorizes the payment and holds it. You're not charged, and the freelancer can see the money is really there.",
     detail: ["$150.00 authorized", "Not captured", "Freelancer can start"],
   },
   {

@@ -24,7 +24,7 @@ export function moneyState(gig: Pick<Gig, "status" | "amountCents" | "currency" 
       sentence =
         role === "client"
           ? gig.status === "draft"
-            ? "Nothing is charged yet. Confirm the criteria, then pay into escrow."
+            ? "Nothing is charged yet. Confirm the criteria, then approve the payment hold."
             : "Nothing is charged yet. When you pay, PayPal holds the money until you approve."
           : "The client hasn't funded this gig yet. Don't start work until the money is held.";
       break;

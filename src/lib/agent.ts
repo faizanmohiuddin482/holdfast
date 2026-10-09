@@ -1,7 +1,7 @@
 // The two AI steps in Holdfast, on Google Gemini:
 //  1. draftCriteria: turn a free-text brief into checkable acceptance criteria before money is held.
 //  2. verifyDeliverable: judge a submission (and the pages it links to) against those criteria
-//     and recommend how much of the escrow to release.
+//     and recommend how much of the held payment to release.
 import { ApiError, GoogleGenAI } from "@google/genai";
 import { z } from "zod";
 import type { Clarification } from "./db";
@@ -67,7 +67,7 @@ const CriteriaSchema = z.object({
 export async function draftCriteria(title: string, brief: string) {
   const { data } = await generate(
     CriteriaSchema,
-    "You write acceptance criteria for freelance gigs paid through escrow. The criteria decide whether money is released, " +
+    "You write acceptance criteria for freelance gigs paid through a PayPal payment hold. The criteria decide whether money is released, " +
       "so each one must be objectively checkable from the delivered work. Cover what the brief asks for, not more. " +
       "Use 3-8 criteria with ids c1, c2, ... Flag genuine ambiguities instead of guessing.",
     `Gig title: ${title}\n\nBrief:\n${brief}`,
@@ -109,7 +109,7 @@ export async function verifyDeliverable(
   const clarifications = answered.length ? `\n\nClarifications agreed before funding:\n${answered.map((c) => `- Q: ${c.question}\n  A: ${c.answer}`).join("\n")}` : "";
   const { data, model } = await generate(
     JudgementSchema,
-    "You are the verification agent for an escrow service. A client has put money on hold for a gig; you judge whether each " +
+    "You are the verification agent for a service that holds payment until work is approved. A client has put money on hold for a gig; you judge whether each " +
       "acceptance criterion was met, using the fetched pages as your evidence. " +
       "Never mark a criterion met from the freelancer's own claims alone: if the evidence for it isn't in a fetched page, use cannot_verify. " +
       "Some criteria are about behaviour, not presence (tests pass, the site works, the build succeeds). For those, files existing is not enough: " +

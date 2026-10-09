@@ -70,11 +70,11 @@ export function NextStep({ gig, role, token, progress, problem, changeRequest }:
           <CriteriaEditor token={token} criteria={gig.criteria} clarifications={gig.clarifications} />
         </Step>
       ) : (
-        <Step mine={false} title="The client is still setting up this gig"><Wait>You&apos;ll be able to start once they&apos;ve agreed the checklist and paid into escrow.</Wait></Step>
+        <Step mine={false} title="The client is still setting up this gig"><Wait>You&apos;ll be able to start once they&apos;ve agreed the checklist and PayPal is holding the payment.</Wait></Step>
       );
     case "awaiting_funding":
       return client ? (
-        <Step mine title="Pay into escrow">
+        <Step mine title="Approve the payment hold">
           <p className="mb-4 text-sm text-ink-2">PayPal holds the money. You aren&apos;t charged until you approve the work, and you only pay for what was delivered.</p>
           {clientId ? <FundButtons token={token} currency={gig.currency} clientId={clientId} /> : <p className="text-sm text-danger">PayPal isn&apos;t configured (NEXT_PUBLIC_PAYPAL_CLIENT_ID).</p>}
         </Step>

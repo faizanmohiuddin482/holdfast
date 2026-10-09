@@ -1,9 +1,9 @@
 # Holdfast
 
-**Escrow for freelance work, released by an AI agent that actually checks the deliverable.**
+**Pay only for what was delivered.** PayPal holds the payment, an AI checks the work against what was agreed, and the client releases the share that was actually done.
 
 Paying a freelancer upfront is risky for the client, and working without payment is risky for the freelancer.
-Escrow platforms solve this, but release still comes down to someone saying "looks good". On a disputed job
+Escrow services and freelance marketplaces help, but release still comes down to someone saying "looks good". On a disputed job
 that means days of back-and-forth. Holdfast holds the client's money with PayPal. When the work comes in, an
 AI agent opens the deliverable, checks it against criteria both sides could see from the start, and
 recommends how much to release: all, part, or none.
@@ -75,7 +75,8 @@ npm run build
 
 - No accounts. Each gig has a private client link and a private freelancer link; whoever holds a link acts as that role.
   The home page lists only gigs created in the current browser.
-- Authorizations last 29 days with a 3-day honor period. Long gigs would need PayPal reauthorization.
+- Holdfast is not an escrow service: no third party takes the money. It uses a PayPal authorization hold on the
+  payer's account, valid up to 29 days (3-day honor period). Long gigs would need PayPal reauthorization.
 - If the capture succeeds but the payout fails, the gig is parked as "Needs attention" rather than retried
   automatically, so money is never moved twice.
 

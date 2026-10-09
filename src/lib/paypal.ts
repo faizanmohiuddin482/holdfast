@@ -1,5 +1,5 @@
 // Minimal PayPal REST client (sandbox by default). Only the calls Holdfast needs:
-// Orders v2 (authorize = escrow hold), Payments v2 (capture / void), Payouts v1.
+// Orders v2 (authorize = payment hold), Payments v2 (capture / void), Payouts v1.
 import { nanoid } from "nanoid";
 
 const BASE = process.env.PAYPAL_API_BASE ?? "https://api-m.sandbox.paypal.com";
@@ -60,7 +60,7 @@ export async function createEscrowOrder(gigId: string, title: string, cents: num
     purchase_units: [
       {
         reference_id: gigId,
-        description: `Holdfast escrow: ${title}`.slice(0, 127),
+        description: `Holdfast: ${title.slice(0, 80)} (held until you approve the work)`,
         custom_id: gigId,
         amount: money(cents, currency),
       },
