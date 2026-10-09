@@ -20,7 +20,13 @@ function Step({ title, mine, children }: { title: string; mine: boolean; childre
 
 const Wait = ({ children }: { children: React.ReactNode }) => <p className="text-sm text-ink-2">{children}</p>;
 
-export function NextStep({ gig, role, token, progress }: { gig: Gig; role: Role; token: string; progress: string[] }) {
+const Problem = ({ text, client }: { text: string; client: boolean }) => (
+  <p className="mb-4 rounded-lg bg-warning-soft px-3 py-2 text-sm text-warning">
+    The last check didn&apos;t finish: {text} {client ? "The freelancer has been asked to submit again." : ""}
+  </p>
+);
+
+export function NextStep({ gig, role, token, progress, problem }: { gig: Gig; role: Role; token: string; progress: string[]; problem: string | null }) {
   const client = role === "client";
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "";
 
@@ -46,11 +52,13 @@ export function NextStep({ gig, role, token, progress }: { gig: Gig; role: Role;
     case "funded":
       return client ? (
         <Step mine title="Invite your freelancer">
+          {problem && <Problem text={problem} client />}
           <p className="mb-4 text-sm text-ink-2">Send them this link. They&apos;ll see the checklist, that the money is held, and where to submit the work.</p>
           <InvitePanel path={`/f/${gig.freelancerToken}`} />
         </Step>
       ) : (
         <Step mine title="Submit your work">
+          {problem && <Problem text={problem} client={false} />}
           <p className="mb-4 text-sm text-ink-2">The money is held, so you can start. When you submit, the AI checks your work against the checklist below.</p>
           <SubmitWorkForm token={token} />
         </Step>
