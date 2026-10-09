@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { submitWork } from "@/lib/escrow";
+import { submitWork } from "@/lib/gigs";
 import { handleToken } from "@/lib/route";
 
 export const runtime = "nodejs";

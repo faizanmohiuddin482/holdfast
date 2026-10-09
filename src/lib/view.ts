@@ -1,7 +1,7 @@
 // A role-safe JSON view of a gig for API clients such as AI agents (the MCP server).
 // The freelancer's view never contains the client's token or page.
 import type { Gig, GigEvent, Role } from "./db";
-import { MAX_REVISIONS } from "./escrow";
+import { MAX_REVISIONS } from "./gigs";
 import { latestChangeRequest, verificationProblem } from "./events";
 import { moneyState } from "./money";
 

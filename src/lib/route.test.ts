@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createGig } from "./db";
 import { handleToken } from "./route";
 
-const gig = createGig({
+const gig = await createGig({
   title: "T", brief: "B", criteria: [{ id: "c1", text: "x", weight: 1 }], clarifications: [],
   amountCents: 100, currency: "USD", freelancerEmail: "f@example.com",
 });

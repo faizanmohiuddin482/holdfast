@@ -8,10 +8,10 @@ import { RoleHeader } from "./RoleHeader";
 import { StatusPoller } from "./StatusPoller";
 import { VerdictCard } from "./VerdictCard";
 
-export function GigView({ gig, role }: { gig: Gig; role: Role }) {
+export async function GigView({ gig, role }: { gig: Gig; role: Role }) {
   const token = role === "client" ? gig.clientToken : gig.freelancerToken;
-  const progress = listProgress(gig.id);
-  const events = listEvents(gig.id);
+  const progress = await listProgress(gig.id);
+  const events = await listEvents(gig.id);
   return (
     <div className="mx-auto max-w-3xl space-y-5">
       <RoleHeader gig={gig} role={role} />

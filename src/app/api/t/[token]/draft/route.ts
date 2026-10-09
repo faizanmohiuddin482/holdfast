@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { saveDraft } from "@/lib/escrow";
+import { saveDraft } from "@/lib/gigs";
 import { handleToken } from "@/lib/route";
 
 export const runtime = "nodejs";
@@ -8,5 +8,5 @@ const Body = z.object({
   clarifications: z.array(z.object({ question: z.string().max(1000), answer: z.string().max(1000) })).max(12),
 });
 export const POST = handleToken("client", Body, async (b, gig) => {
-  saveDraft(gig.id, b);
+  await saveDraft(gig.id, b);
 });
