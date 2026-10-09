@@ -14,5 +14,5 @@ const Body = z.object({
 
 export const POST = handle(Body, async (b) => {
   const gig = await openGig({ ...b, amountCents: Math.round(b.amount * 100) });
-  return { id: gig.id };
+  return { clientToken: gig.clientToken };
 });
