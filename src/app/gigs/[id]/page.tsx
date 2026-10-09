@@ -90,6 +90,19 @@ export default async function GigPage({ params }: { params: Promise<{ id: string
           <p className="text-sm">
             Recommends releasing <span className="keybox font-bold">{v.releasePercent}%</span>. {v.summary}
           </p>
+          {v.sources && (
+            <div className="t-caption">
+              SOURCES CHECKED:{" "}
+              {v.sources.length === 0
+                ? "none (the submission had no links)"
+                : v.sources.map((s, i) => (
+                    <span key={s.url}>
+                      {i > 0 && " · "}
+                      <a href={s.url} target="_blank" rel="noreferrer" className={s.ok ? "text-blue underline" : "text-warn line-through"}>{s.url}</a>
+                    </span>
+                  ))}
+            </div>
+          )}
           {v.messageToFreelancer && (
             <div className="window window-tint !p-3 text-sm"><div className="t-label mb-1">Note to freelancer:</div>{v.messageToFreelancer}</div>
           )}

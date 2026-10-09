@@ -4,8 +4,8 @@
 
 Paying a freelancer upfront is risky for the client, and working without payment is risky for the freelancer.
 Escrow platforms solve this, but release still comes down to someone saying "looks good". On a disputed job
-that means days of back-and-forth. Holdfast holds the client's money with PayPal. When the work comes in, a
-Claude agent opens the deliverable, checks it against criteria both sides could see from the start, and
+that means days of back-and-forth. Holdfast holds the client's money with PayPal. When the work comes in, an
+AI agent opens the deliverable, checks it against criteria both sides could see from the start, and
 recommends how much to release: all, part, or none.
 
 ## How it works
@@ -15,10 +15,11 @@ recommends how much to release: all, part, or none.
 2. **Hold, don't pay.** The client funds via PayPal Checkout with `intent: AUTHORIZE`. PayPal places a hold;
    nothing is captured.
 3. **Deliver.** The freelancer submits a description plus links (repo, deployed site, docs).
-4. **Verify.** The agent uses Claude's `web_fetch` tool to open the links and judges each criterion
+4. **Verify.** Holdfast fetches every link in the submission (GitHub repos through the GitHub API, other pages as
+   text, with guards so a submission can't point it at internal addresses). Gemini then judges each criterion
    (`met`, `partially_met`, `not_met`, `cannot_verify`) with evidence. It returns a weighted release
    percentage, feedback for the freelancer and, if it recommends less than 100%, a neutral dispute summary.
-   The submission is treated as untrusted input, so instructions embedded in it are ignored.
+   The submission and fetched pages are treated as untrusted input, so instructions embedded in them are ignored.
 5. **Settle.** The client approves the agent's percentage or overrides it. Overrides are logged. Holdfast then:
    - **captures** that share of the authorization (`final_capture: true`, so the rest goes back to the client
      automatically), or **voids** the hold at 0%;
@@ -43,11 +44,11 @@ Every money-moving call sends a deterministic `PayPal-Request-Id`, so retries ca
 
 ## AI tools used
 
-- **Claude Opus 5.5** (`claude-opus-5-5`) through the Anthropic TypeScript SDK.
-  - Structured outputs (Zod schemas) for both the criteria and the verdict, so the app never parses free text.
-  - Server-side `web_fetch` tool so the agent inspects the real deliverable instead of trusting the
-    freelancer's description.
-  - Server-side refusal fallback (`fallbacks: "default"`).
+- **Google Gemini** (Flash, free tier; set `GEMINI_MODEL` to change it) through the `@google/genai` SDK.
+  - Drafts acceptance criteria from the brief.
+  - Judges the deliverable against them using the fetched pages as evidence.
+  - Both calls use JSON-schema structured output generated from Zod schemas, and every answer is validated
+    again with Zod, so the app never parses free text.
 
 ## Run it locally
 
@@ -57,7 +58,7 @@ Requires Node 22.5+ (uses the built-in `node:sqlite`).
    In the sandbox accounts list you'll have a **personal** account (use it to pay as the client) and a
    **business** account (the platform). Create a second personal account for the freelancer and use its email
    when you create a gig.
-2. Get a Claude API key at [console.anthropic.com](https://console.anthropic.com).
+2. Get a free Gemini API key at [aistudio.google.com](https://aistudio.google.com) → Get API key.
 3. Set up and start the app:
 
    ```bash
