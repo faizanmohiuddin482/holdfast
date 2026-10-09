@@ -51,9 +51,11 @@ client, or deliver as the freelancer.
 | `request_changes` | client | Send the work back; the money stays held |
 | `release_payment` | client | Release the AI's recommended share, within the spending policy |
 
-Guardrails: money in always needs a human (the agent hands over the PayPal approval link); `HOLDFAST_MAX_GIG_USD`
-(default 100) caps each gig; `release_payment` only releases the AI's recommendation, and only automatically when it
-is at least `HOLDFAST_MIN_AUTO_RELEASE_PERCENT` (default 90) or 0%. Anything else goes back to the human.
+Guardrails: money in always needs a human (the agent hands over the link; the human approves the hold in PayPal).
+The MCP tools refuse gigs above `HOLDFAST_MAX_GIG_USD` (default 100), and `release_payment` only releases the AI's
+recommendation, automatically only when it is at least `HOLDFAST_MIN_AUTO_RELEASE_PERCENT` (default 90) or 0%.
+These limits live in the MCP tools, not in Holdfast's HTTP API: an agent that can make its own HTTP requests could use
+the client link directly, so connect agents you trust.
 
 ```bash
 # Claude Code, from a clone of this repo (the app must be running)
@@ -66,7 +68,7 @@ Claude Desktop (`claude_desktop_config.json`):
 { "mcpServers": { "holdfast": { "command": "node", "args": ["/path/to/holdfast/mcp/index.mts"], "env": { "HOLDFAST_URL": "http://localhost:3000" } } } }
 ```
 
-Requires Node 22.6+ (the server's `.mts` files run directly with Node's built-in TypeScript support).
+Requires Node 22.18+ or 23.6+ (the server's `.mts` files run directly with Node's built-in TypeScript support). Point MCP clients at `node mcp/index.mts`, not `npm run mcp`: npm prints a banner on stdout, which breaks the protocol.
 
 ## AI tools used
 

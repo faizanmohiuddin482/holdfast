@@ -1,18 +1,17 @@
 import { ConnectAgent } from "./ConnectAgent";
 
 const chat = [
-  { who: "you", text: "Hire someone to build a TypeScript time-conversion library for $50. Release the payment automatically if the AI scores it 90% or more." },
+  { who: "you", text: "Hire someone to build a TypeScript time-conversion library for $50, and pay them if the work checks out." },
   { who: "agent", text: "Created the gig. The AI drafted 5 checklist items and has 2 questions: which time units, and does \"publish\" include npm?" },
   { who: "you", text: "Milliseconds to years. GitHub is enough." },
-  { who: "agent", text: "Checklist locked. Please approve the $50.00 PayPal hold at your Holdfast link. Nothing is charged until I release it." },
-  { who: "agent", text: "Hold approved, and I've sent the freelancer their link." },
-  { who: "agent", text: "The work came in. The AI opened the repo and its CI: 5 of 5 items met, so it recommends 100%. That's within your policy, so I released it: $47.50 to the freelancer after the fee." },
+  { who: "agent", text: "Checklist locked. Please approve the $50.00 PayPal hold at your Holdfast link. Nothing is charged until payment is released. Here's the link for your freelancer." },
+  { who: "agent", text: "The work came in. The AI opened the repo and its CI: 5 of 5 items met, so it recommends 100%. That's within the limits in your Holdfast setup, so I released it: $47.50 to the freelancer after the fee." },
 ] as const;
 
 const guardrails = [
-  ["Money in needs you", "Your agent can't approve a PayPal payment. It sends you the link."],
-  ["Your limit, not the agent's", "Each gig is capped by the spending limit you set."],
-  ["It can't overrule the AI", "Your agent releases only the AI's recommendation, and only above your threshold. Anything else comes back to you."],
+  ["Money in needs you", "Your agent can't approve a PayPal payment. You approve the hold yourself, in PayPal."],
+  ["Limits built into the tools", "Holdfast's agent tools refuse gigs above the spending limit you set, and never let the agent pick its own percentage."],
+  ["The AI's number, or yours", "The tools release only the AI's recommendation, and only at or above your threshold (or 0%, which returns everything). Anything else comes back to you."],
 ] as const;
 
 export function AgentSection() {
@@ -24,6 +23,10 @@ export function AgentSection() {
         <p className="max-w-md text-ink-2">
           Holdfast works as an MCP server, so an agent like Claude can post the job, wait for the work, check the AI&apos;s
           verdict and pay, inside limits you set. The freelancer can be an agent too.
+        </p>
+        <p className="max-w-md text-xs text-muted">
+          The limits are enforced by Holdfast&apos;s agent tools. An agent that can make its own web requests could still use
+          your client link directly, so connect agents you trust.
         </p>
         <ul className="space-y-3">
           {guardrails.map(([title, body]) => (
