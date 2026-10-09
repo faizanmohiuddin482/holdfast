@@ -32,7 +32,7 @@ export function handle<T>(schema: z.ZodType<T>, fn: (body: T) => Promise<unknown
 }
 
 /** For /api/t/[token]/…: resolves the token and enforces which role may call the action. */
-export function handleToken<T>(role: Role | "any", schema: z.ZodType<T>, fn: (body: T, gig: Gig, role: Role) => Promise<unknown>) {
+export function handleToken<T>(role: Role | "any", schema: z.ZodType<T>, fn: (body: T, gig: Gig, role: Role, req: Request) => Promise<unknown>) {
   return async (req: Request, ctx: TokenCtx) => {
     try {
       const found = lookup((await ctx.params).token);
@@ -42,7 +42,7 @@ export function handleToken<T>(role: Role | "any", schema: z.ZodType<T>, fn: (bo
       }
       const body = req.method === "GET" ? { data: undefined as T } : await parse(req, schema);
       if ("error" in body) return body.error;
-      return NextResponse.json((await fn(body.data, found.gig, found.role)) ?? { ok: true });
+      return NextResponse.json((await fn(body.data, found.gig, found.role, req)) ?? { ok: true });
     } catch (err) {
       return fail(err);
     }
