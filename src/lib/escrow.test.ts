@@ -23,6 +23,7 @@ vi.mock("./paypal", () => ({
 import { verifyDeliverable } from "./agent";
 import { getGig, listEvents, listProgress } from "./db";
 import * as escrow from "./escrow";
+import * as paypal from "./paypal";
 
 const judgement: Judgement = {
   results: [
@@ -176,5 +177,51 @@ describe("a late verification run", () => {
     finish[0](judgement);
     await new Promise((r) => setTimeout(r, 10));
     expect(getGig(gig.id)!).toMatchObject({ status: "funded", verdict: null });
+  });
+});
+
+describe("request changes", () => {
+  async function verifiedGig() {
+    vi.mocked(verifyDeliverable).mockResolvedValue(judgement);
+    const gig = await fundedGig();
+    await escrow.submitWork(gig.id, "Done: https://github.com/a/b");
+    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
+    return gig;
+  }
+
+  it("sends the gig back to the freelancer with the money still held and nothing charged", async () => {
+    const gig = await verifiedGig();
+    vi.mocked(paypal.captureAuthorization).mockClear();
+    escrow.requestChanges(gig.id, "  Please add CI so the tests run.  ");
+    expect(getGig(gig.id)!).toMatchObject({ status: "funded", revisions: 1, authorizationId: "AUTH1", settlement: null });
+    expect(paypal.captureAuthorization).not.toHaveBeenCalled();
+    expect(listEvents(gig.id).at(-1)).toMatchObject({ actor: "client", type: "changes_requested", detail: "Please add CI so the tests run." });
+  });
+
+  it("lets the freelancer resubmit and gets a fresh check", async () => {
+    const gig = await verifiedGig();
+    escrow.requestChanges(gig.id, "Add CI");
+    vi.mocked(verifyDeliverable).mockResolvedValue({ ...judgement, summary: "Revised: all good." });
+    await escrow.submitWork(gig.id, "Revised: https://github.com/a/b");
+    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
+    expect(getGig(gig.id)!.verdict!.summary).toBe("Revised: all good.");
+  });
+
+  it("allows at most two change requests", async () => {
+    const gig = await verifiedGig();
+    for (let round = 1; round <= escrow.MAX_REVISIONS; round++) {
+      escrow.requestChanges(gig.id, `round ${round}`);
+      await escrow.submitWork(gig.id, "again: https://github.com/a/b");
+      await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
+    }
+    expect(() => escrow.requestChanges(gig.id, "one more")).toThrow("No change requests left");
+    expect(getGig(gig.id)!.status).toBe("verified");
+  });
+
+  it("needs a note, and only works while the client is reviewing", async () => {
+    const gig = await verifiedGig();
+    expect(() => escrow.requestChanges(gig.id, "   ")).toThrow("Say what needs to change");
+    escrow.requestChanges(gig.id, "fix it");
+    expect(() => escrow.requestChanges(gig.id, "again")).toThrow("not waiting for your review");
   });
 });

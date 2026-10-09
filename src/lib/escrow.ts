@@ -6,6 +6,8 @@ import { decisionFor, formatMoney, planSettlement } from "./settle";
 import { computeRelease } from "./verdict";
 
 const STALE_MS = 5 * 60_000;
+/** Change requests a client may make per gig; after that they release a share or 0%. Protects the freelancer. */
+export const MAX_REVISIONS = 2;
 
 export class EscrowError extends Error {
   constructor(message: string, public status = 400) {
@@ -109,6 +111,20 @@ async function runVerification(gig: Gig, submission: string, runId: number) {
     if (failVerification(id, runId)) logEvent(id, "agent", "verification_failed", err instanceof Error ? err.message : String(err));
     else console.error(err);
   }
+}
+
+/** The client sends the work back for changes. The money stays held; nothing is charged. */
+export function requestChanges(id: string, note: string) {
+  const gig = mustGet(id);
+  const text = note.trim();
+  if (!text) throw new EscrowError("Say what needs to change");
+  if (gig.status !== "verified") throw new EscrowError("This gig is not waiting for your review");
+  if (gig.revisions >= MAX_REVISIONS) {
+    throw new EscrowError(`No change requests left: you've used all ${MAX_REVISIONS}. Release a share, or 0% to get everything back.`);
+  }
+  if (!transition(id, "verified", "funded")) throw new EscrowError("This gig is not waiting for your review");
+  updateGig(id, { revisions: gig.revisions + 1 });
+  logEvent(id, "client", "changes_requested", text.slice(0, 2000));
 }
 
 export async function settle(id: string, releasePercent: number, actor: "client" | "agent") {

@@ -9,7 +9,7 @@ const labels: Record<Role, Record<MoneyNode["key"], string>> = {
   freelancer: { source: "Client's PayPal", held: "Held by PayPal", freelancer: "You", returned: "Back to client" },
 };
 
-export function moneyState(gig: Pick<Gig, "status" | "amountCents" | "currency" | "settlement">, role: Role) {
+export function moneyState(gig: Pick<Gig, "status" | "amountCents" | "currency" | "settlement"> & { revisions?: number }, role: Role) {
   const fmt = (c: number) => formatMoney(c, gig.currency);
   const st = gig.settlement;
   const cents = { source: 0, held: 0, freelancer: 0, returned: 0 };
@@ -33,6 +33,13 @@ export function moneyState(gig: Pick<Gig, "status" | "amountCents" | "currency" 
     case "verified":
       cents.held = gig.amountCents;
       activeKeys = ["held"];
+      if (gig.status === "funded" && (gig.revisions ?? 0) > 0) {
+        sentence =
+          role === "client"
+            ? `Your ${fmt(gig.amountCents)} is still held by PayPal while the freelancer revises. You haven't been charged.`
+            : `The client's ${fmt(gig.amountCents)} is still held by PayPal. You'll be paid when the revised work is approved.`;
+        break;
+      }
       sentence =
         role === "client"
           ? `Your ${fmt(gig.amountCents)} is held by PayPal. You haven't been charged, and nothing moves until you approve.`

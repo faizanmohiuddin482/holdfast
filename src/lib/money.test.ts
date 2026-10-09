@@ -51,3 +51,11 @@ describe("moneyState", () => {
     expect(moneyState(gig("failed", st), "freelancer").sentence).toBe("$19.00 is approved for you, but the payout is delayed. The client has been asked to retry.");
   });
 });
+
+describe("moneyState during a revision", () => {
+  it("says the money is still held while the freelancer revises", () => {
+    const g = { ...base, status: "funded" as const, revisions: 1 };
+    expect(moneyState(g, "client").sentence).toBe("Your $20.00 is still held by PayPal while the freelancer revises. You haven't been charged.");
+    expect(moneyState(g, "freelancer").sentence).toBe("The client's $20.00 is still held by PayPal. You'll be paid when the revised work is approved.");
+  });
+});

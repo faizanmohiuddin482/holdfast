@@ -1,5 +1,7 @@
 import type { Gig, Role } from "@/lib/db";
+import { MAX_REVISIONS } from "@/lib/escrow";
 import { PLATFORM_FEE_BPS } from "@/lib/settle";
+import { RequestChanges } from "../RequestChanges";
 import { FundButtons } from "../FundButtons";
 import { RetryPayout } from "../RetryPayout";
 import { SettlePanel } from "../SettlePanel";
@@ -26,8 +28,38 @@ const Problem = ({ text, client }: { text: string; client: boolean }) => (
   </p>
 );
 
-export function NextStep({ gig, role, token, progress, problem }: { gig: Gig; role: Role; token: string; progress: string[]; problem: string | null }) {
+function ChangeNote({ note, gig }: { note: string; gig: Gig }) {
+  const short = gig.verdict?.results.filter((r) => r.status !== "met") ?? [];
+  const textOf = (id: string) => gig.criteria.find((c) => c.id === id)?.text ?? id;
+  return (
+    <div className="mb-4 space-y-2 rounded-lg bg-primary-soft p-4 text-sm">
+      <p className="font-semibold text-primary">The client asked for changes</p>
+      <p className="whitespace-pre-wrap text-ink">{note}</p>
+      {short.length > 0 && (
+        <div>
+          <p className="mt-2 text-xs font-semibold text-ink-2">Items that fell short last time</p>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink-2">
+            {short.map((r) => <li key={r.criterionId}>{textOf(r.criterionId)}</li>)}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Pre-fills the client's change request from the AI's findings. */
+function suggestedChanges(gig: Gig) {
+  const v = gig.verdict;
+  if (!v) return "";
+  const short = v.results.filter((r) => r.status !== "met").map((r) => `- ${gig.criteria.find((c) => c.id === r.criterionId)?.text ?? r.criterionId}`);
+  return [v.messageToFreelancer, short.length ? `Still needed:\n${short.join("\n")}` : ""].filter(Boolean).join("\n\n");
+}
+
+export function NextStep({ gig, role, token, progress, problem, changeRequest }: {
+  gig: Gig; role: Role; token: string; progress: string[]; problem: string | null; changeRequest: string | null;
+}) {
   const client = role === "client";
+  const round = `round ${gig.revisions + 1} of ${MAX_REVISIONS + 1}`;
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID ?? "";
 
   switch (gig.status) {
@@ -50,6 +82,23 @@ export function NextStep({ gig, role, token, progress, problem }: { gig: Gig; ro
         <Step mine={false} title="Waiting for the client to pay"><Wait>Don&apos;t start work yet. This page updates as soon as the money is held.</Wait></Step>
       );
     case "funded":
+      if (changeRequest) {
+        return client ? (
+          <Step mine={false} title={`Waiting for the revised work (${round})`}>
+            {problem && <Problem text={problem} client />}
+            <ChangeNote note={changeRequest} gig={gig} />
+            <p className="mb-4 text-sm text-ink-2">Your money stays held. When they resubmit, the AI checks the revised work and you review it again.</p>
+            <InvitePanel path={`/f/${gig.freelancerToken}`} />
+          </Step>
+        ) : (
+          <Step mine title={`Changes requested (${round})`}>
+            {problem && <Problem text={problem} client={false} />}
+            <ChangeNote note={changeRequest} gig={gig} />
+            <p className="mb-4 text-sm text-ink-2">The money is still held for you. Make the changes, then resubmit; the AI checks the revised work against the same checklist.</p>
+            <SubmitWorkForm token={token} revised />
+          </Step>
+        );
+      }
       return client ? (
         <Step mine title="Invite your freelancer">
           {problem && <Problem text={problem} client />}
@@ -71,12 +120,22 @@ export function NextStep({ gig, role, token, progress, problem }: { gig: Gig; ro
       );
     case "verified":
       return client ? (
-        <Step mine title="Review and release">
-          <SettlePanel token={token} amountCents={gig.amountCents} currency={gig.currency} recommendedPercent={gig.verdict?.releasePercent ?? 0} feeBps={PLATFORM_FEE_BPS} />
+        <Step mine title={gig.revisions > 0 ? `Review the revised work (${round})` : "Review and release"}>
+          <div className="space-y-4">
+            <SettlePanel token={token} amountCents={gig.amountCents} currency={gig.currency} recommendedPercent={gig.verdict?.releasePercent ?? 0} feeBps={PLATFORM_FEE_BPS} />
+            {gig.revisions < MAX_REVISIONS ? (
+              <RequestChanges token={token} suggested={suggestedChanges(gig)} left={MAX_REVISIONS - gig.revisions} total={MAX_REVISIONS} />
+            ) : (
+              <p className="border-t border-line pt-4 text-xs text-muted">You&apos;ve used all your change requests. Release a share, or 0% to get everything back.</p>
+            )}
+          </div>
         </Step>
       ) : (
         <Step mine={false} title="The client is reviewing the AI's verdict">
-          <Wait>They can release the recommended {gig.verdict?.releasePercent ?? 0}% or adjust it. You&apos;ll see the payment here.</Wait>
+          <Wait>
+            They can release the recommended {gig.verdict?.releasePercent ?? 0}%, adjust it
+            {gig.revisions < MAX_REVISIONS ? ", or ask you for changes" : ""}. You&apos;ll see the result here.
+          </Wait>
         </Step>
       );
     case "settling":

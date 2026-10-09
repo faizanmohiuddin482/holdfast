@@ -13,7 +13,7 @@ export function VerdictCard({ gig, role }: { gig: Gig; role: Role }) {
   return (
     <section className="card space-y-4" aria-labelledby="verdict-heading">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="verdict-heading" className="text-lg font-semibold">What the AI found</h2>
+        <h2 id="verdict-heading" className="text-lg font-semibold">{gig.status === "funded" ? "Last review" : "What the AI found"}</h2>
         <span className="text-xs text-muted">{v.confidence} confidence · {v.model}</span>
       </div>
       <p className="text-sm text-ink-2">{v.summary}</p>

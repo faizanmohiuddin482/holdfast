@@ -44,6 +44,7 @@ const added: [string, string][] = [
   ["freelancer_token", "TEXT"],
   ["clarifications", "TEXT NOT NULL DEFAULT '[]'"],
   ["settlement", "TEXT"],
+  ["revisions", "INTEGER NOT NULL DEFAULT 0"],
 ];
 for (const [name, type] of added) if (!existing.has(name)) db.exec(`ALTER TABLE gigs ADD COLUMN ${name} ${type}`);
 for (const { id } of db.prepare("SELECT id FROM gigs WHERE client_token IS NULL").all() as { id: string }[]) {
@@ -77,6 +78,8 @@ export type Gig = {
   payoutBatchId: string | null;
   verdict: Verdict | null;
   settlement: Settlement | null;
+  /** Change requests the client has made so far. */
+  revisions: number;
   createdAt: string;
 };
 
@@ -104,6 +107,7 @@ const toGig = (r: Row): Gig => ({
   payoutBatchId: r.payout_batch_id as string | null,
   verdict: json(r.verdict, null),
   settlement: json(r.settlement, null),
+  revisions: (r.revisions as number | null) ?? 0,
   createdAt: r.created_at as string,
 });
 
@@ -141,6 +145,7 @@ const columns = {
   criteria: "criteria",
   clarifications: "clarifications",
   settlement: "settlement",
+  revisions: "revisions",
 } as const;
 const jsonColumns = new Set(["verdict", "criteria", "clarifications", "settlement"]);
 
