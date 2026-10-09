@@ -37,6 +37,37 @@ recommends how much to release: all, part, or none.
 
 Every money-moving call sends a deterministic `PayPal-Request-Id`, so retries can't double-capture or double-pay.
 
+## Use it from an AI agent (MCP)
+
+Holdfast ships an MCP server so an AI agent (Claude Code, Claude Desktop, any MCP client) can hire someone as the
+client, or deliver as the freelancer.
+
+| Tool | For | What it does |
+|---|---|---|
+| `create_gig` | client | Brief → AI checklist and open questions; returns the private client token |
+| `update_checklist` / `confirm_checklist` | client | Edit items, answer the AI's questions, lock it; returns the link where the human approves the PayPal hold |
+| `get_gig` | both | Status, where the money is, next step, live AI progress, verdict with evidence |
+| `submit_work` | freelancer | Submit links; the AI checks them |
+| `request_changes` | client | Send the work back; the money stays held |
+| `release_payment` | client | Release the AI's recommended share, within the spending policy |
+
+Guardrails: money in always needs a human (the agent hands over the PayPal approval link); `HOLDFAST_MAX_GIG_USD`
+(default 100) caps each gig; `release_payment` only releases the AI's recommendation, and only automatically when it
+is at least `HOLDFAST_MIN_AUTO_RELEASE_PERCENT` (default 90) or 0%. Anything else goes back to the human.
+
+```bash
+# Claude Code, from a clone of this repo (the app must be running)
+claude mcp add holdfast -e HOLDFAST_URL=http://localhost:3000 -- node "$PWD/mcp/index.mts"
+```
+
+Claude Desktop (`claude_desktop_config.json`):
+
+```json
+{ "mcpServers": { "holdfast": { "command": "node", "args": ["/path/to/holdfast/mcp/index.mts"], "env": { "HOLDFAST_URL": "http://localhost:3000" } } } }
+```
+
+Requires Node 22.6+ (the server's `.mts` files run directly with Node's built-in TypeScript support).
+
 ## AI tools used
 
 - **Google Gemini** (Flash, free tier; set `GEMINI_MODEL` to change it) through the `@google/genai` SDK.
