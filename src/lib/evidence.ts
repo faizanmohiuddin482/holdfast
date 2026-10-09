@@ -80,14 +80,19 @@ async function fetchGitHubRepo(owner: string, repo: string): Promise<string> {
   const api = `https://api.github.com/repos/${owner}/${repo}`;
   const gh = { Accept: "application/vnd.github+json", ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}) };
   const meta = JSON.parse((await safeFetch(api, gh)).body) as { description: string | null; default_branch: string; language: string | null; pushed_at: string };
-  const [tree, readme] = await Promise.all([
+  const [tree, readme, runs] = await Promise.all([
     safeFetch(`${api}/git/trees/${meta.default_branch}?recursive=1`, gh).then((r) => JSON.parse(r.body) as { tree: { path: string; type: string }[]; truncated: boolean }),
     safeFetch(`${api}/readme`, { ...gh, Accept: "application/vnd.github.raw" }).then((r) => r.body).catch(() => "(no README)"),
+    safeFetch(`${api}/actions/runs?branch=${meta.default_branch}&per_page=5`, gh)
+      .then((r) => (JSON.parse(r.body) as { workflow_runs: { name: string; status: string; conclusion: string | null; created_at: string }[] }).workflow_runs)
+      .catch(() => null),
   ]);
+  const ci = runs === null ? "(could not read CI runs)" : runs.length === 0 ? "(no CI runs)" : runs.map((r) => `${r.name}: ${r.conclusion ?? r.status} (${r.created_at})`).join("\n");
   const files = tree.tree.filter((t) => t.type === "blob").map((t) => t.path);
   return [
     `GITHUB REPO ${owner}/${repo}: ${meta.description ?? "(no description)"}; language ${meta.language ?? "unknown"}; last push ${meta.pushed_at}`,
     `FILES (${files.length}${tree.truncated ? "+, truncated" : ""}):\n${files.slice(0, 300).join("\n")}`,
+    `LATEST CI RUNS ON ${meta.default_branch}:\n${ci}`,
     `README:\n${readme.slice(0, 6_000)}`,
   ].join("\n\n");
 }
