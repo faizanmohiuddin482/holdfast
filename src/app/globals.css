@@ -1,58 +1,115 @@
 @import "tailwindcss";
 
+/* Sync design system tokens (Part B1). Light only: there is no dark theme. */
 :root {
-  --background: #f7f6f2;
-  --surface: #ffffff;
-  --foreground: #1b1a17;
-  --muted: #6b675e;
-  --line: #e4e1d8;
-  --accent: #1f4d3a;
-  --accent-soft: #e3eee8;
-  --warn: #8a5a00;
-  --warn-soft: #fbf0d9;
-  --bad: #9b2c2c;
-  --bad-soft: #f8e1e1;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #121210;
-    --surface: #1b1b18;
-    --foreground: #ecebe6;
-    --muted: #9c988d;
-    --line: #2e2d29;
-    --accent: #7cc4a0;
-    --accent-soft: #1d2f26;
-    --warn: #e2b04f;
-    --warn-soft: #30281a;
-    --bad: #ec8b8b;
-    --bad-soft: #3a2020;
-  }
+  --bg: #ffffff;
+  --grid: #dce6ff;
+  --ink: #0b1020;
+  --ink-mute: #5b6472;
+  --blue: #2f5bff;
+  --blue-tint: #eaf0ff;
+  --yellow: #ffd400;
+  --ink-inverse: #ffffff;
+  --ok: #1db954;
+  --warn: #e8590c;
+  color-scheme: light;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-foreground: var(--foreground);
-  --color-muted: var(--muted);
-  --color-line: var(--line);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
+  --color-bg: var(--bg);
+  --color-grid: var(--grid);
+  --color-ink: var(--ink);
+  --color-ink-mute: var(--ink-mute);
+  --color-blue: var(--blue);
+  --color-blue-tint: var(--blue-tint);
+  --color-yellow: var(--yellow);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-ok: var(--ok);
   --color-warn: var(--warn);
-  --color-warn-soft: var(--warn-soft);
-  --color-bad: var(--bad);
-  --color-bad-soft: var(--bad-soft);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-playfair);
+  --radius-*: initial;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg);
+  /* 24px graph paper, lines at ~30% */
+  background-image:
+    linear-gradient(to right, rgb(220 230 255 / 0.3) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(220 230 255 / 0.3) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font-family: var(--font-plex-mono), ui-monospace, monospace;
+  font-size: 14px;
 }
 
-.card { @apply rounded-xl border border-line bg-surface p-5; }
-.label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted; }
-.input { @apply w-full rounded-lg border border-line bg-background px-3 py-2 text-sm outline-none focus:border-accent; }
-.btn { @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50; }
-.btn-ghost { @apply inline-flex items-center justify-center rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-background disabled:opacity-50; }
+*,
+*::before,
+*::after {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Type scale (B1) */
+.t-display { @apply font-display text-[40px] leading-[1.1] italic sm:text-[52px]; }
+.t-h1 { @apply text-2xl font-bold uppercase; }
+.t-h2 { @apply text-base font-bold uppercase; }
+.t-label { @apply text-xs uppercase tracking-[0.08em]; }
+.t-caption { @apply text-[11px] text-ink-mute; }
+
+/* Framed window: 2px ink outer border; .window-double adds the inset line 3px inside it. */
+.window { @apply border-2 border-ink bg-bg p-4 sm:p-6; }
+.window-double { outline: 1px solid var(--ink); outline-offset: -6px; }
+.window-tint { @apply bg-blue-tint; }
+
+/* Stat line: LABEL: ......... VALUE */
+.stat { @apply flex items-baseline gap-2; }
+.stat > dt { @apply shrink-0 text-xs uppercase tracking-[0.08em] text-ink-mute; }
+.stat > dt::after { content: ":"; }
+.stat > dd { @apply ml-auto text-right; }
+.stat::before { content: ""; order: 1; }
+
+/* The single yellow keyword box per view (B2) */
+.keybox { @apply bg-yellow px-1 text-ink; box-decoration-break: clone; }
+
+/* Inputs: framed terminal window */
+.input {
+  @apply w-full border-2 border-ink bg-bg px-3 py-2 text-sm outline-none placeholder:text-ink-mute;
+  caret-color: var(--blue);
+}
+.input:focus { outline: 2px solid var(--yellow); outline-offset: 0; }
+.prompt { @apply relative; }
+.prompt > .input { @apply pl-7; }
+.prompt::before { content: ">"; @apply pointer-events-none absolute top-2 left-2.5 font-bold text-blue; }
+
+/* Buttons: mono caps, square, stepped transitions */
+.btn,
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 border-2 border-ink px-4 py-2 text-xs font-bold tracking-[0.08em] uppercase disabled:cursor-not-allowed disabled:opacity-50;
+  transition: background-color 120ms steps(3), color 120ms steps(3);
+}
+.btn { @apply bg-blue text-ink-inverse hover:bg-ink; }
+.btn-ghost { @apply bg-bg text-ink hover:bg-blue-tint; }
+.btn:focus-visible,
+.btn-ghost:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+
+/* Chips */
+.chip { @apply inline-block border-2 border-ink px-2 py-0.5 text-[11px] font-bold tracking-[0.08em] uppercase; }
+
+/* Blinking terminal cursor */
+.cursor::after {
+  content: "";
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--blue);
+  animation: blink 1s steps(1) infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor::after { animation: none; }
+  .btn, .btn-ghost { transition: none; }
+}

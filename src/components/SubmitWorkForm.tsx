@@ -24,10 +24,12 @@ export function SubmitWorkForm({ gigId }: { gigId: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-3">
-      <textarea name="submission" required rows={6} className="input"
-        placeholder="Describe what you delivered and link to it: repo, deployed URL, docs. The agent opens the links and checks them against each criterion." />
-      {error && <p className="text-sm text-bad">{error}</p>}
-      <button className="btn" disabled={busy}>{busy ? "Agent is checking the work…" : "Submit work for verification"}</button>
+      <div className="prompt">
+        <textarea name="submission" required rows={6} className="input" disabled={busy}
+          placeholder="What you delivered, with links: repo, deployed URL, docs. The agent opens each link and checks it against the criteria." />
+      </div>
+      {error && <p className="text-sm text-warn">{error}</p>}
+      <button className="btn" disabled={busy}>{busy ? <span className="cursor">Agent checking the work</span> : "Submit for verification"}</button>
     </form>
   );
 }

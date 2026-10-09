@@ -11,7 +11,7 @@ export function FundButtons({ gigId, currency, clientId }: { gigId: string; curr
     <div className="space-y-2">
       <PayPalScriptProvider options={{ clientId, intent: "authorize", currency }}>
         <PayPalButtons
-          style={{ layout: "vertical", shape: "rect", label: "pay" }}
+          style={{ layout: "vertical", shape: "sharp", color: "blue", label: "pay" }}
           createOrder={async () => (await post<{ orderId: string }>(`/api/gigs/${gigId}/order`)).orderId}
           onApprove={async ({ orderID }) => {
             await post(`/api/gigs/${gigId}/authorize`, { orderId: orderID });
@@ -20,7 +20,7 @@ export function FundButtons({ gigId, currency, clientId }: { gigId: string; curr
           onError={(err) => setError(err instanceof Error ? err.message : String(err))}
         />
       </PayPalScriptProvider>
-      {error && <p className="text-sm text-bad">{error}</p>}
+      {error && <p className="text-sm text-warn">{error}</p>}
     </div>
   );
 }
