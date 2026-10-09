@@ -1,65 +1,36 @@
-import Link from "next/link";
-import { listGigs } from "@/lib/db";
-import { formatMoney } from "@/lib/settle";
+import { MyGigs } from "@/components/MyGigs";
 import { NewGigForm } from "@/components/NewGigForm";
-import { StatusBadge } from "@/components/StatusBadge";
-
-export const dynamic = "force-dynamic";
 
 const steps = [
-  ["01", "Brief", "The agent turns your brief into checkable acceptance criteria."],
-  ["02", "Hold", "PayPal authorizes the payment and holds it. Nothing is charged."],
-  ["03", "Verify", "The agent opens the deliverable and checks every criterion."],
-  ["04", "Release", "You approve. PayPal pays the earned share and returns the rest."],
+  ["Agree", "The AI turns your brief into a checklist you both see."],
+  ["Hold", "You pay into escrow. PayPal holds it; nothing is charged."],
+  ["Check", "The AI opens the delivered work and checks every item."],
+  ["Release", "You approve. The freelancer is paid for what was delivered."],
 ] as const;
 
 export default function Home() {
-  const gigs = listGigs();
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       <section className="max-w-2xl">
-        <h1 className="t-display">
-          Pay for the work, <span className="keybox not-italic font-mono text-[0.8em] font-bold">not the promise</span>.
-        </h1>
-        <p className="mt-4 text-ink-mute">
-          Holdfast holds the client&apos;s money with PayPal. When the freelancer delivers, an AI agent checks the work
-          against the agreed criteria and recommends how much to release: all of it, part of it, or none.
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Hire someone without paying blind.</h1>
+        <p className="mt-3 text-ink-2">
+          PayPal holds your money. When the work arrives, an AI checks it against what you agreed and tells you how much was
+          delivered. You approve, and only that share is paid.
         </p>
       </section>
-
-      <section id="how" className="grid border-2 border-ink sm:grid-cols-4">
-        {steps.map(([n, title, body], i) => (
-          <div key={n} className={`bg-bg p-4 ${i ? "border-t-2 border-ink sm:border-t-0 sm:border-l-2" : ""}`}>
-            <div className="t-caption">{n}</div>
-            <div className="t-h2 mt-1 text-blue">{title}</div>
-            <p className="mt-2 text-xs leading-relaxed">{body}</p>
-          </div>
+      <ol className="grid gap-3 sm:grid-cols-4">
+        {steps.map(([title, body], i) => (
+          <li key={title} className="rounded-xl border border-line bg-surface p-4">
+            <div className="text-xs font-semibold text-primary">Step {i + 1}</div>
+            <div className="mt-1 text-sm font-semibold">{title}</div>
+            <p className="mt-1 text-xs text-ink-2">{body}</p>
+          </li>
         ))}
-      </section>
-
-      <section className="grid gap-8 md:grid-cols-[1fr_minmax(0,18rem)]">
+      </ol>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <NewGigForm />
-        <div>
-          <h2 className="t-h2 mb-3">Gigs</h2>
-          {gigs.length === 0 ? (
-            <div className="window window-tint t-caption">No gigs yet. Create one to start.</div>
-          ) : (
-            <ul className="space-y-3">
-              {gigs.map((g) => (
-                <li key={g.id}>
-                  <Link href={`/gigs/${g.id}`} className="window block !p-3 hover:bg-blue-tint">
-                    <div className="truncate text-sm font-bold">{g.title}</div>
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <span className="text-xs">{formatMoney(g.amountCents, g.currency)}</span>
-                      <StatusBadge status={g.status} />
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
+        <MyGigs />
+      </div>
     </div>
   );
 }

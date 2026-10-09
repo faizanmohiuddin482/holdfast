@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { post } from "./api";
+import { saveGig } from "./savedGigs";
 
 export function NewGigForm() {
   const router = useRouter();
@@ -12,9 +13,11 @@ export function NewGigForm() {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    const form = Object.fromEntries(new FormData(e.currentTarget)) as Record<string, string>;
     try {
-      const { id } = await post<{ id: string }>("/api/gigs", Object.fromEntries(new FormData(e.currentTarget)));
-      router.push(`/gigs/${id}`);
+      const { clientToken } = await post<{ clientToken: string }>("/api/gigs", form);
+      saveGig({ token: clientToken, title: form.title, amount: `$${Number(form.amount).toFixed(2)}`, createdAt: new Date().toISOString() });
+      router.push(`/c/${clientToken}`);
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
@@ -22,30 +25,34 @@ export function NewGigForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="window window-double space-y-4">
-      <h2 className="t-h2">New gig</h2>
+    <form onSubmit={onSubmit} className="card space-y-5">
       <div>
-        <label className="t-label mb-1 block" htmlFor="title">Gig:</label>
-        <div className="prompt"><input id="title" name="title" required className="input" placeholder="Landing page for a coffee subscription" /></div>
+        <h2 className="text-lg font-semibold">Hire someone</h2>
+        <p className="mt-1 text-sm text-ink-2">Describe the job. The AI turns it into a checklist you can review before paying anything.</p>
       </div>
       <div>
-        <label className="t-label mb-1 block" htmlFor="brief">Brief:</label>
-        <textarea id="brief" name="brief" required rows={6} className="input"
-          placeholder="What you need, in plain words. The agent turns this into acceptance criteria before any money is held." />
+        <label className="label" htmlFor="title">What do you need?</label>
+        <input id="title" name="title" required minLength={3} className="input" placeholder="Landing page for a coffee subscription" />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div>
+        <label className="label" htmlFor="brief">Describe the job</label>
+        <textarea id="brief" name="brief" required minLength={20} rows={5} className="input"
+          placeholder="What should be delivered, and how you'll know it's done. Links to a repo or live site are easiest to check." />
+      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
         <div>
-          <label className="t-label mb-1 block" htmlFor="amount">Amount (USD):</label>
-          <div className="prompt"><input id="amount" name="amount" type="number" min="1" step="0.01" required className="input" placeholder="150" /></div>
+          <label className="label" htmlFor="amount">Amount (USD)</label>
+          <input id="amount" name="amount" type="number" min="1" step="0.01" required className="input money" placeholder="150.00" />
+          <p className="hint">Held by PayPal until you approve the work.</p>
         </div>
         <div>
-          <label className="t-label mb-1 block" htmlFor="freelancerEmail">Freelancer PayPal:</label>
-          <div className="prompt"><input id="freelancerEmail" name="freelancerEmail" type="email" required className="input" placeholder="freelancer@example.com" /></div>
-          <p className="t-caption mt-1">The payout goes to this exact address. Check it for typos.</p>
+          <label className="label" htmlFor="freelancerEmail">Freelancer&apos;s PayPal email</label>
+          <input id="freelancerEmail" name="freelancerEmail" type="email" required className="input" placeholder="freelancer@example.com" />
+          <p className="hint">They&apos;re paid here, so check it for typos.</p>
         </div>
       </div>
-      {error && <p className="border-2 border-warn px-3 py-2 text-sm text-warn">{error}</p>}
-      <button className="btn" disabled={busy}>{busy ? <span className="cursor">Drafting criteria</span> : "Create gig"}</button>
+      {error && <p className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
+      <button className="btn w-full sm:w-auto" disabled={busy}>{busy ? "Writing your checklist…" : "Continue"}</button>
     </form>
   );
 }

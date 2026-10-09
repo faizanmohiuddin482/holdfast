@@ -1,115 +1,52 @@
 @import "tailwindcss";
 
-/* Sync design system tokens (Part B1). Light only: there is no dark theme. */
 :root {
-  --bg: #ffffff;
-  --grid: #dce6ff;
-  --ink: #0b1020;
-  --ink-mute: #5b6472;
-  --blue: #2f5bff;
-  --blue-tint: #eaf0ff;
-  --yellow: #ffd400;
-  --ink-inverse: #ffffff;
-  --ok: #1db954;
-  --warn: #e8590c;
+  --page: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #111827;
+  --ink-2: #4b5563;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --primary: #1a56db;
+  --primary-soft: #eef4ff;
+  --success: #059669;
+  --success-soft: #ecfdf5;
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
   color-scheme: light;
 }
 
 @theme inline {
-  --color-bg: var(--bg);
-  --color-grid: var(--grid);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
   --color-ink: var(--ink);
-  --color-ink-mute: var(--ink-mute);
-  --color-blue: var(--blue);
-  --color-blue-tint: var(--blue-tint);
-  --color-yellow: var(--yellow);
-  --color-ink-inverse: var(--ink-inverse);
-  --color-ok: var(--ok);
-  --color-warn: var(--warn);
-  --font-mono: var(--font-plex-mono);
-  --font-display: var(--font-playfair);
-  --radius-*: initial;
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-inter);
 }
 
 body {
-  background-color: var(--bg);
-  /* 24px graph paper, lines at ~30% */
-  background-image:
-    linear-gradient(to right, rgb(220 230 255 / 0.3) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(220 230 255 / 0.3) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background: var(--page);
   color: var(--ink);
-  font-family: var(--font-plex-mono), ui-monospace, monospace;
-  font-size: 14px;
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
-*,
-*::before,
-*::after {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-}
-
-/* Type scale (B1) */
-.t-display { @apply font-display text-[40px] leading-[1.1] italic sm:text-[52px]; }
-.t-h1 { @apply text-2xl font-bold uppercase; }
-.t-h2 { @apply text-base font-bold uppercase; }
-.t-label { @apply text-xs uppercase tracking-[0.08em]; }
-.t-caption { @apply text-[11px] text-ink-mute; }
-
-/* Framed window: 2px ink outer border; .window-double adds the inset line 3px inside it. */
-.window { @apply border-2 border-ink bg-bg p-4 sm:p-6; }
-.window-double { outline: 1px solid var(--ink); outline-offset: -6px; }
-.window-tint { @apply bg-blue-tint; }
-
-/* Stat line: LABEL: ......... VALUE */
-.stat { @apply flex items-baseline gap-2; }
-.stat > dt { @apply shrink-0 text-xs uppercase tracking-[0.08em] text-ink-mute; }
-.stat > dt::after { content: ":"; }
-.stat > dd { @apply ml-auto text-right; }
-.stat::before { content: ""; order: 1; }
-
-/* The single yellow keyword box per view (B2) */
-.keybox { @apply bg-yellow px-1 text-ink; box-decoration-break: clone; }
-
-/* Inputs: framed terminal window */
-.input {
-  @apply w-full border-2 border-ink bg-bg px-3 py-2 text-sm outline-none placeholder:text-ink-mute;
-  caret-color: var(--blue);
-}
-.input:focus { outline: 2px solid var(--yellow); outline-offset: 0; }
-.prompt { @apply relative; }
-.prompt > .input { @apply pl-7; }
-.prompt::before { content: ">"; @apply pointer-events-none absolute top-2 left-2.5 font-bold text-blue; }
-
-/* Buttons: mono caps, square, stepped transitions */
-.btn,
-.btn-ghost {
-  @apply inline-flex items-center justify-center gap-2 border-2 border-ink px-4 py-2 text-xs font-bold tracking-[0.08em] uppercase disabled:cursor-not-allowed disabled:opacity-50;
-  transition: background-color 120ms steps(3), color 120ms steps(3);
-}
-.btn { @apply bg-blue text-ink-inverse hover:bg-ink; }
-.btn-ghost { @apply bg-bg text-ink hover:bg-blue-tint; }
-.btn:focus-visible,
-.btn-ghost:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
-
-/* Chips */
-.chip { @apply inline-block border-2 border-ink px-2 py-0.5 text-[11px] font-bold tracking-[0.08em] uppercase; }
-
-/* Blinking terminal cursor */
-.cursor::after {
-  content: "";
-  display: inline-block;
-  width: 0.6em;
-  height: 1em;
-  margin-left: 2px;
-  vertical-align: -0.15em;
-  background: var(--blue);
-  animation: blink 1s steps(1) infinite;
-}
-@keyframes blink { 50% { opacity: 0; } }
-
-@media (prefers-reduced-motion: reduce) {
-  .cursor::after { animation: none; }
-  .btn, .btn-ghost { transition: none; }
-}
+.card { @apply rounded-xl border border-line bg-surface p-5 shadow-[0_1px_2px_rgba(16,24,40,0.05)] sm:p-6; }
+.label { @apply mb-1.5 block text-sm font-medium text-ink; }
+.hint { @apply mt-1 text-xs text-muted; }
+.input { @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/20; }
+.btn { @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50; }
+.btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-page disabled:cursor-not-allowed disabled:opacity-50; }
+.pill { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+.money { font-variant-numeric: tabular-nums; }
