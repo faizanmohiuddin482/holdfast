@@ -19,3 +19,24 @@ describe("payoutToFreelancer", () => {
     expect(bodies[0].sender_batch_header).toMatchObject({ sender_batch_id: "holdfast-gig1" });
   });
 });
+
+describe("captureAuthorization", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("uses a different idempotency key for a different amount, so a retry can't silently reuse an old capture", async () => {
+    process.env.PAYPAL_CLIENT_ID = "id";
+    process.env.PAYPAL_CLIENT_SECRET = "secret";
+    const keys: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (url: string, init: RequestInit) => {
+      if (url.endsWith("/v1/oauth2/token")) return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+      keys.push((init.headers as Record<string, string>)["PayPal-Request-Id"]);
+      return new Response(JSON.stringify({ id: "CAP", status: "COMPLETED" }), { status: 201 });
+    }));
+    const { captureAuthorization } = await import("./paypal");
+    await captureAuthorization("AUTH1", 1200, "USD", "n");
+    await captureAuthorization("AUTH1", 1200, "USD", "n");
+    await captureAuthorization("AUTH1", 2000, "USD", "n");
+    expect(keys[0]).toBe(keys[1]);
+    expect(keys[2]).not.toBe(keys[0]);
+  });
+});

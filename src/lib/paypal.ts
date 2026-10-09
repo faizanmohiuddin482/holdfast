@@ -87,7 +87,8 @@ export async function captureAuthorization(authorizationId: string, cents: numbe
     "capture",
     `/v2/payments/authorizations/${authorizationId}/capture`,
     { amount: money(cents, currency), final_capture: true, note_to_payer: note.slice(0, 255) },
-    `capture-${authorizationId}`,
+    // Amount is part of the key: a retry at a different amount must not get an earlier capture replayed back.
+    `capture-${authorizationId}-${cents}`,
   );
   return { captureId: res.id, status: res.status };
 }
