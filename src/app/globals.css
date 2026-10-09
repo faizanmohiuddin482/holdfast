@@ -1,26 +1,58 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f7f6f2;
+  --surface: #ffffff;
+  --foreground: #1b1a17;
+  --muted: #6b675e;
+  --line: #e4e1d8;
+  --accent: #1f4d3a;
+  --accent-soft: #e3eee8;
+  --warn: #8a5a00;
+  --warn-soft: #fbf0d9;
+  --bad: #9b2c2c;
+  --bad-soft: #f8e1e1;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #121210;
+    --surface: #1b1b18;
+    --foreground: #ecebe6;
+    --muted: #9c988d;
+    --line: #2e2d29;
+    --accent: #7cc4a0;
+    --accent-soft: #1d2f26;
+    --warn: #e2b04f;
+    --warn-soft: #30281a;
+    --bad: #ec8b8b;
+    --bad-soft: #3a2020;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
+
+.card { @apply rounded-xl border border-line bg-surface p-5; }
+.label { @apply mb-1 block text-xs font-medium uppercase tracking-wide text-muted; }
+.input { @apply w-full rounded-lg border border-line bg-background px-3 py-2 text-sm outline-none focus:border-accent; }
+.btn { @apply inline-flex items-center justify-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-surface transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50; }
+.btn-ghost { @apply inline-flex items-center justify-center rounded-lg border border-line px-4 py-2 text-sm font-medium hover:bg-background disabled:opacity-50; }
