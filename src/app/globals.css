@@ -50,3 +50,12 @@ body {
 .btn-secondary { @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink transition-colors hover:bg-page disabled:cursor-not-allowed disabled:opacity-50; }
 .pill { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
 .money { font-variant-numeric: tabular-nums; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
