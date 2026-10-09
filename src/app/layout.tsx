@@ -1,31 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { IBM_Plex_Mono, Playfair_Display } from "next/font/google";
-import { Nav } from "@/components/Nav";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const plexMono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "700"] });
-const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], style: ["italic"], weight: ["400"] });
+const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Holdfast",
-  description: "Escrow for freelance work, released by an AI agent that checks the deliverable.",
+  description: "Hire someone without paying blind: PayPal holds the money and an AI checks the work before anyone is paid.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${plexMono.variable} ${playfair.variable} antialiased`}>
-        <header className="border-b-2 border-ink bg-bg">
-          <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-            <Link href="/" className="t-h2 tracking-[0.12em]">
-              <span className="mr-2 inline-block h-3 w-3 bg-blue align-middle" aria-hidden />
+      <body className={`${inter.variable} antialiased`}>
+        <header className="border-b border-line bg-surface">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+            <Link href="/" className="flex items-center gap-2 text-base font-semibold tracking-tight">
+              <span className="grid h-6 w-6 place-items-center rounded-md bg-primary text-xs font-bold text-white" aria-hidden>H</span>
               Holdfast
             </Link>
-            <Nav />
+            <span className="pill bg-warning-soft text-warning">PayPal sandbox</span>
           </div>
         </header>
-        <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">{children}</main>
+        <main className="mx-auto max-w-5xl px-4 py-8 sm:py-10">{children}</main>
       </body>
     </html>
   );

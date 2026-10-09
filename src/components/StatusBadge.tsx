@@ -1,16 +1,17 @@
 import type { GigStatus } from "@/lib/db";
 
 const styles: Record<GigStatus, [string, string]> = {
-  awaiting_funding: ["Awaiting funding", "bg-bg text-ink"],
-  funded: ["Funds held", "bg-blue text-ink-inverse"],
-  verifying: ["Agent verifying", "bg-blue-tint text-blue"],
-  verified: ["Awaiting release", "border-warn bg-bg text-warn"],
-  settling: ["Settling", "bg-blue-tint text-blue"],
-  settled: ["Settled", "border-ok bg-bg text-ok"],
-  failed: ["Needs attention", "border-warn bg-warn text-ink-inverse"],
+  draft: ["Setting up", "bg-page text-ink-2"],
+  awaiting_funding: ["Waiting for payment", "bg-warning-soft text-warning"],
+  funded: ["Money held", "bg-primary-soft text-primary"],
+  verifying: ["AI checking", "bg-primary-soft text-primary"],
+  verified: ["Awaiting approval", "bg-warning-soft text-warning"],
+  settling: ["Paying out", "bg-primary-soft text-primary"],
+  settled: ["Complete", "bg-success-soft text-success"],
+  failed: ["Payout delayed", "bg-danger-soft text-danger"],
 };
 
 export function StatusBadge({ status }: { status: GigStatus }) {
   const [label, cls] = styles[status];
-  return <span className={`chip ${cls}`}>{label}</span>;
+  return <span className={`pill ${cls}`}>{label}</span>;
 }

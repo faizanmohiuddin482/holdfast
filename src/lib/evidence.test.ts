@@ -37,3 +37,14 @@ describe("htmlToText", () => {
     expect(text).not.toContain("evil");
   });
 });
+
+describe("gatherEvidence progress", () => {
+  it("reports each link as it is handled, and says when there are none", async () => {
+    const lines: string[] = [];
+    await gatherEvidence("see http://localhost:3000/admin", (l) => lines.push(l));
+    expect(lines).toEqual(["Couldn't open http://localhost:3000/admin: internal host"]);
+    const none: string[] = [];
+    await gatherEvidence("no links here", (l) => none.push(l));
+    expect(none).toEqual(["The submission has no links to open"]);
+  });
+});
