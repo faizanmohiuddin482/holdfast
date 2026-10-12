@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { completeFunding } from "@/lib/escrow";
+import { completeFunding } from "@/lib/gigs";
 import { handleToken } from "@/lib/route";
 
 export const runtime = "nodejs";

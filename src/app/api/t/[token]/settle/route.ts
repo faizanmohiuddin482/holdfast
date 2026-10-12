@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { settle } from "@/lib/escrow";
+import { settle } from "@/lib/gigs";
 import { handleToken } from "@/lib/route";
 
 export const runtime = "nodejs";

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createGig, type Gig } from "./db";
 import { gigView, nextStepText } from "./view";
 
-const gig = createGig({
+const gig = await createGig({
   title: "Lib", brief: "A library with tests.", amountCents: 5000, currency: "USD", freelancerEmail: "f@example.com",
   criteria: [{ id: "c1", text: "Has a README", weight: 2 }, { id: "c2", text: "Tests pass in CI", weight: 3 }],
   clarifications: [{ question: "Which units?", answer: "" }, { question: "npm too?", answer: "No" }],

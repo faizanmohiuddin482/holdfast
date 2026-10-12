@@ -1,5 +1,5 @@
 import type { Gig, Role } from "@/lib/db";
-import { MAX_REVISIONS } from "@/lib/escrow";
+import { MAX_REVISIONS } from "@/lib/gigs";
 import { PLATFORM_FEE_BPS } from "@/lib/settle";
 import { RequestChanges } from "../RequestChanges";
 import { FundButtons } from "../FundButtons";

@@ -22,7 +22,7 @@ vi.mock("./paypal", () => ({
 
 import { verifyDeliverable } from "./agent";
 import { getGig, listEvents, listProgress } from "./db";
-import * as escrow from "./escrow";
+import * as gigs from "./gigs";
 import * as paypal from "./paypal";
 
 const judgement: Judgement = {
@@ -40,13 +40,13 @@ const judgement: Judgement = {
   sources: [{ url: "https://github.com/a/b", ok: true }],
 };
 
-const newGig = () => escrow.openGig({ title: "Lib", brief: "A library with tests.", amountCents: 2000, currency: "USD", freelancerEmail: "f@example.com" });
+const newGig = () => gigs.openGig({ title: "Lib", brief: "A library with tests.", amountCents: 2000, currency: "USD", freelancerEmail: "f@example.com" });
 
 async function fundedGig() {
   const gig = await newGig();
-  escrow.confirmCriteria(gig.id);
-  await escrow.startFunding(gig.id);
-  await escrow.completeFunding(gig.id, "ORDER1");
+  await gigs.confirmCriteria(gig.id);
+  await gigs.startFunding(gig.id);
+  await gigs.completeFunding(gig.id, "ORDER1");
   return gig;
 }
 
@@ -63,24 +63,24 @@ describe("draft", () => {
 
   it("saves edited criteria with renumbered ids and trimmed text", async () => {
     const gig = await newGig();
-    escrow.saveDraft(gig.id, { criteria: [{ text: "  Uses vitest ", weight: 3 }], clarifications: [{ question: "Which test framework?", answer: "vitest" }] });
-    expect(getGig(gig.id)!.criteria).toEqual([{ id: "c1", text: "Uses vitest", weight: 3 }]);
-    expect(getGig(gig.id)!.clarifications[0].answer).toBe("vitest");
+    await gigs.saveDraft(gig.id, { criteria: [{ text: "  Uses vitest ", weight: 3 }], clarifications: [{ question: "Which test framework?", answer: "vitest" }] });
+    expect((await getGig(gig.id))!.criteria).toEqual([{ id: "c1", text: "Uses vitest", weight: 3 }]);
+    expect((await getGig(gig.id))!.clarifications[0].answer).toBe("vitest");
   });
 
   it("rejects an empty criteria list or a blank criterion, and keeps the draft", async () => {
     const gig = await newGig();
-    expect(() => escrow.saveDraft(gig.id, { criteria: [], clarifications: [] })).toThrow("Add at least one criterion");
-    expect(() => escrow.saveDraft(gig.id, { criteria: [{ text: "   ", weight: 2 }], clarifications: [] })).toThrow("Every criterion needs some text");
-    expect(getGig(gig.id)!.criteria).toHaveLength(2);
-    expect(getGig(gig.id)!.status).toBe("draft");
+    await expect(gigs.saveDraft(gig.id, { criteria: [], clarifications: [] })).rejects.toThrow("Add at least one criterion");
+    await expect(gigs.saveDraft(gig.id, { criteria: [{ text: "   ", weight: 2 }], clarifications: [] })).rejects.toThrow("Every criterion needs some text");
+    expect((await getGig(gig.id))!.criteria).toHaveLength(2);
+    expect((await getGig(gig.id))!.status).toBe("draft");
   });
 
   it("locks criteria once confirmed", async () => {
     const gig = await newGig();
-    escrow.confirmCriteria(gig.id);
-    expect(getGig(gig.id)!.status).toBe("awaiting_funding");
-    expect(() => escrow.saveDraft(gig.id, { criteria: [{ text: "x", weight: 1 }], clarifications: [] })).toThrow("can't be edited");
+    await gigs.confirmCriteria(gig.id);
+    expect((await getGig(gig.id))!.status).toBe("awaiting_funding");
+    await expect(gigs.saveDraft(gig.id, { criteria: [{ text: "x", weight: 1 }], clarifications: [] })).rejects.toThrow("can't be edited");
   });
 });
 
@@ -93,12 +93,12 @@ describe("verification", () => {
       return judgement;
     });
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "Done: https://github.com/a/b");
-    expect(getGig(gig.id)!.status).toBe("verifying");
-    expect(listProgress(gig.id)).toEqual(["Opened https://github.com/a/b: 3 files"]);
+    await gigs.submitWork(gig.id, "Done: https://github.com/a/b");
+    expect((await getGig(gig.id))!.status).toBe("verifying");
+    expect((await listProgress(gig.id))).toEqual(["Opened https://github.com/a/b: 3 files"]);
     finish();
-    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
-    const v = getGig(gig.id)!.verdict!;
+    await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("verified"));
+    const v = (await getGig(gig.id))!.verdict!;
     expect(v.releasePercent).toBe(75);
     expect(v.releaseWorking).toBe("c1 2/2 · c2 1/2 → 3/4 = 75%");
   });
@@ -106,19 +106,19 @@ describe("verification", () => {
   it("goes back to funded with an event when verification fails", async () => {
     vi.mocked(verifyDeliverable).mockRejectedValue(new Error("The AI service is busy right now."));
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "Done");
-    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("funded"));
-    expect(listEvents(gig.id).at(-1)).toMatchObject({ type: "verification_failed" });
+    await gigs.submitWork(gig.id, "Done");
+    await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("funded"));
+    expect((await listEvents(gig.id)).at(-1)).toMatchObject({ type: "verification_failed" });
   });
 
   it("recovers a gig stuck in verifying after 5 minutes", async () => {
     vi.mocked(verifyDeliverable).mockImplementation(() => new Promise(() => {}));
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "Done");
-    const stuck = getGig(gig.id)!;
-    expect(escrow.recoverStale(stuck, Date.now() + 4 * 60_000).status).toBe("verifying");
-    expect(escrow.recoverStale(stuck, Date.now() + 6 * 60_000).status).toBe("funded");
-    expect(listEvents(gig.id).at(-1)).toMatchObject({ type: "verification_interrupted" });
+    await gigs.submitWork(gig.id, "Done");
+    const stuck = (await getGig(gig.id))!;
+    expect((await gigs.recoverStale(stuck, Date.now() + 4 * 60_000)).status).toBe("verifying");
+    expect((await gigs.recoverStale(stuck, Date.now() + 6 * 60_000)).status).toBe("funded");
+    expect((await listEvents(gig.id)).at(-1)).toMatchObject({ type: "verification_interrupted" });
   });
 });
 
@@ -126,23 +126,23 @@ describe("settle", () => {
   it("stores the settlement amounts of a partial release", async () => {
     vi.mocked(verifyDeliverable).mockResolvedValue(judgement);
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "Done");
-    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
-    await escrow.settle(gig.id, 60, "client");
-    expect(getGig(gig.id)!).toMatchObject({
+    await gigs.submitWork(gig.id, "Done");
+    await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("verified"));
+    await gigs.settle(gig.id, 60, "client");
+    expect((await getGig(gig.id))!).toMatchObject({
       status: "settled",
       settlement: { releasePercent: 60, captureCents: 1200, feeCents: 60, payoutCents: 1140, returnedCents: 800 },
     });
-    expect(listEvents(gig.id).some((e) => e.type === "override")).toBe(true);
+    expect((await listEvents(gig.id)).some((e) => e.type === "override")).toBe(true);
   });
 });
 
 describe("lookup", () => {
   it("resolves tokens to roles", async () => {
     const gig = await newGig();
-    expect(escrow.lookup(gig.clientToken)?.role).toBe("client");
-    expect(escrow.lookup(gig.freelancerToken)?.role).toBe("freelancer");
-    expect(escrow.lookup("missing")).toBeNull();
+    expect((await gigs.lookup(gig.clientToken))?.role).toBe("client");
+    expect((await gigs.lookup(gig.freelancerToken))?.role).toBe("freelancer");
+    expect(await gigs.lookup("missing")).toBeNull();
   });
 });
 
@@ -156,27 +156,27 @@ describe("a late verification run", () => {
   it("is discarded when the freelancer resubmitted after it was interrupted", async () => {
     const finish = controlledRuns();
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "first try");
-    escrow.recoverStale(getGig(gig.id)!, Date.now() + 6 * 60_000);
-    await escrow.submitWork(gig.id, "second try");
+    await gigs.submitWork(gig.id, "first try");
+    await gigs.recoverStale((await getGig(gig.id))!, Date.now() + 6 * 60_000);
+    await gigs.submitWork(gig.id, "second try");
 
     finish[0]({ ...judgement, summary: "verdict for the FIRST try" });
     await new Promise((r) => setTimeout(r, 10));
-    expect(getGig(gig.id)!).toMatchObject({ status: "verifying", verdict: null });
+    expect((await getGig(gig.id))!).toMatchObject({ status: "verifying", verdict: null });
 
     finish[1]({ ...judgement, summary: "verdict for the SECOND try" });
-    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
-    expect(getGig(gig.id)!.verdict!.summary).toBe("verdict for the SECOND try");
+    await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("verified"));
+    expect((await getGig(gig.id))!.verdict!.summary).toBe("verdict for the SECOND try");
   });
 
   it("does not attach a verdict to a gig that went back to funded", async () => {
     const finish = controlledRuns();
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "first try");
-    escrow.recoverStale(getGig(gig.id)!, Date.now() + 6 * 60_000);
+    await gigs.submitWork(gig.id, "first try");
+    await gigs.recoverStale((await getGig(gig.id))!, Date.now() + 6 * 60_000);
     finish[0](judgement);
     await new Promise((r) => setTimeout(r, 10));
-    expect(getGig(gig.id)!).toMatchObject({ status: "funded", verdict: null });
+    expect((await getGig(gig.id))!).toMatchObject({ status: "funded", verdict: null });
   });
 });
 
@@ -184,44 +184,44 @@ describe("request changes", () => {
   async function verifiedGig() {
     vi.mocked(verifyDeliverable).mockResolvedValue(judgement);
     const gig = await fundedGig();
-    await escrow.submitWork(gig.id, "Done: https://github.com/a/b");
-    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
+    await gigs.submitWork(gig.id, "Done: https://github.com/a/b");
+    await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("verified"));
     return gig;
   }
 
   it("sends the gig back to the freelancer with the money still held and nothing charged", async () => {
     const gig = await verifiedGig();
     vi.mocked(paypal.captureAuthorization).mockClear();
-    escrow.requestChanges(gig.id, "  Please add CI so the tests run.  ");
-    expect(getGig(gig.id)!).toMatchObject({ status: "funded", revisions: 1, authorizationId: "AUTH1", settlement: null });
+    await gigs.requestChanges(gig.id, "  Please add CI so the tests run.  ");
+    expect((await getGig(gig.id))!).toMatchObject({ status: "funded", revisions: 1, authorizationId: "AUTH1", settlement: null });
     expect(paypal.captureAuthorization).not.toHaveBeenCalled();
-    expect(listEvents(gig.id).at(-1)).toMatchObject({ actor: "client", type: "changes_requested", detail: "Please add CI so the tests run." });
+    expect((await listEvents(gig.id)).at(-1)).toMatchObject({ actor: "client", type: "changes_requested", detail: "Please add CI so the tests run." });
   });
 
   it("lets the freelancer resubmit and gets a fresh check", async () => {
     const gig = await verifiedGig();
-    escrow.requestChanges(gig.id, "Add CI");
+    await gigs.requestChanges(gig.id, "Add CI");
     vi.mocked(verifyDeliverable).mockResolvedValue({ ...judgement, summary: "Revised: all good." });
-    await escrow.submitWork(gig.id, "Revised: https://github.com/a/b");
-    await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
-    expect(getGig(gig.id)!.verdict!.summary).toBe("Revised: all good.");
+    await gigs.submitWork(gig.id, "Revised: https://github.com/a/b");
+    await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("verified"));
+    expect((await getGig(gig.id))!.verdict!.summary).toBe("Revised: all good.");
   });
 
   it("allows at most two change requests", async () => {
     const gig = await verifiedGig();
-    for (let round = 1; round <= escrow.MAX_REVISIONS; round++) {
-      escrow.requestChanges(gig.id, `round ${round}`);
-      await escrow.submitWork(gig.id, "again: https://github.com/a/b");
-      await vi.waitFor(() => expect(getGig(gig.id)!.status).toBe("verified"));
+    for (let round = 1; round <= gigs.MAX_REVISIONS; round++) {
+      await gigs.requestChanges(gig.id, `round ${round}`);
+      await gigs.submitWork(gig.id, "again: https://github.com/a/b");
+      await vi.waitFor(async () => expect((await getGig(gig.id))!.status).toBe("verified"));
     }
-    expect(() => escrow.requestChanges(gig.id, "one more")).toThrow("No change requests left");
-    expect(getGig(gig.id)!.status).toBe("verified");
+    await expect(gigs.requestChanges(gig.id, "one more")).rejects.toThrow("No change requests left");
+    expect((await getGig(gig.id))!.status).toBe("verified");
   });
 
   it("needs a note, and only works while the client is reviewing", async () => {
     const gig = await verifiedGig();
-    expect(() => escrow.requestChanges(gig.id, "   ")).toThrow("Say what needs to change");
-    escrow.requestChanges(gig.id, "fix it");
-    expect(() => escrow.requestChanges(gig.id, "again")).toThrow("not waiting for your review");
+    await expect(gigs.requestChanges(gig.id, "   ")).rejects.toThrow("Say what needs to change");
+    await gigs.requestChanges(gig.id, "fix it");
+    await expect(gigs.requestChanges(gig.id, "again")).rejects.toThrow("not waiting for your review");
   });
 });

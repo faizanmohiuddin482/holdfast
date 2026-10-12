@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { retryPayout } from "@/lib/escrow";
+import { retryPayout } from "@/lib/gigs";
 import { handleToken } from "@/lib/route";
 
 export const runtime = "nodejs";

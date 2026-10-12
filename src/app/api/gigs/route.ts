@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { openGig } from "@/lib/escrow";
+import { openGig } from "@/lib/gigs";
 import { handle } from "@/lib/route";
 
 export const runtime = "nodejs";
