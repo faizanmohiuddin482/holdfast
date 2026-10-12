@@ -23,6 +23,9 @@ services:
       # The Firebase service-account key JSON, pasted as one value.
       - key: FIREBASE_SERVICE_ACCOUNT
         sync: false
+      # The named Firestore database inside that project.
+      - key: FIRESTORE_DATABASE_ID
+        value: holdfast
       # This service's public URL (e.g. https://holdfast.onrender.com), used in links handed to agents.
       - key: HOLDFAST_PUBLIC_URL
         sync: false

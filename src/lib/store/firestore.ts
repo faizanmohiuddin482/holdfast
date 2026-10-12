@@ -37,9 +37,9 @@ function toGig(id: string, d: DocumentData): Gig {
   };
 }
 
-export function createFirestoreStore(serviceAccount: ServiceAccount, prefix = ""): Store {
+export function createFirestoreStore(serviceAccount: ServiceAccount, prefix = "", databaseId = "(default)"): Store {
   const app = getApps().find((a) => a.name === "holdfast") ?? initializeApp({ credential: cert(serviceAccount) }, "holdfast");
-  const db = getFirestore(app);
+  const db = getFirestore(app, databaseId);
   const gigs = db.collection(`${prefix}gigs`);
   const eventsOf = (id: string) => gigs.doc(id).collection("events");
 

@@ -11,7 +11,8 @@ async function pick(): Promise<Store> {
   const sa = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (sa) {
     const { createFirestoreStore } = await import("./store/firestore");
-    return createFirestoreStore(JSON.parse(sa), process.env.FIRESTORE_COLLECTION_PREFIX ?? "");
+    const env = process.env;
+    return createFirestoreStore(JSON.parse(sa), env.FIRESTORE_COLLECTION_PREFIX ?? "", env.FIRESTORE_DATABASE_ID || "(default)");
   }
   return createSqliteStore(process.env.HOLDFAST_DB ?? path.join(process.cwd(), "data", "holdfast.db"));
 }
