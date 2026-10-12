@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { createGig } from "./db";
-import { handleToken } from "./route";
+import { handleToken, publicOrigin } from "./route";
 
 const gig = await createGig({
   title: "T", brief: "B", criteria: [{ id: "c1", text: "x", weight: 1 }], clarifications: [],
@@ -31,5 +31,21 @@ describe("handleToken", () => {
 
   it("lets either role read status (the freelancer's tab sees the client's changes)", async () => {
     expect(await (await call(anyRole, gig.freelancerToken)).json()).toEqual({ role: "freelancer", status: "draft" });
+  });
+});
+
+describe("publicOrigin", () => {
+  const req = (headers: Record<string, string>) => new Request("http://localhost:10000/api/t/x", { headers });
+
+  it("uses the address the visitor used when behind a proxy, not the internal one", () => {
+    expect(publicOrigin(req({ "x-forwarded-host": "holdfast.onrender.com", "x-forwarded-proto": "https" }), undefined)).toBe("https://holdfast.onrender.com");
+  });
+
+  it("prefers the configured public URL, without a trailing slash", () => {
+    expect(publicOrigin(req({ "x-forwarded-host": "a.example" }), "https://holdfast.example/")).toBe("https://holdfast.example");
+  });
+
+  it("falls back to the request's own origin", () => {
+    expect(publicOrigin(req({}), undefined)).toBe("http://localhost:10000");
   });
 });

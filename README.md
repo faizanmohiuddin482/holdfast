@@ -8,6 +8,9 @@ that means days of back-and-forth. Holdfast holds the client's money with PayPal
 AI agent opens the deliverable, checks it against criteria both sides could see from the start, and
 recommends how much to release: all, part, or none.
 
+**Live demo:** [holdfast-6ws6.onrender.com](https://holdfast-6ws6.onrender.com) (PayPal sandbox; no real money moves).
+It runs on a free plan, so the first visit after a quiet spell can take up to a minute to wake.
+
 ## How it works
 
 1. **Agree.** The client describes the job. The AI turns it into a weighted checklist and flags unclear points.
@@ -80,7 +83,7 @@ Requires Node 22.18+ or 23.6+ (the server's `.mts` files run directly with Node'
 
 ## Run it locally
 
-Requires Node 22.5+ (uses the built-in `node:sqlite`).
+Requires Node 22.18+ or 23.6+ (uses the built-in `node:sqlite`, and runs the MCP server's TypeScript directly).
 
 1. Create a PayPal sandbox app at [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox.
    In the sandbox accounts list you'll have a **personal** account (use it to pay as the client) and a
@@ -100,9 +103,16 @@ Requires Node 22.5+ (uses the built-in `node:sqlite`).
    deployed URL works best), then approve the release. Check the freelancer's sandbox account for the payout.
 
 ```bash
-npm test     # settlement math
+npm test     # unit tests (add FIRESTORE_TEST_SERVICE_ACCOUNT to also test against a real Firestore)
 npm run build
 ```
+
+## Deploy it
+
+`render.yaml` is a Render Blueprint for a free web service. Locally the data lives in SQLite; hosted, it lives in
+Firestore (free tier): set `FIREBASE_SERVICE_ACCOUNT` to a service-account key (one line of JSON, with the
+Cloud Datastore User role) and `FIRESTORE_DATABASE_ID` if the database isn't `(default)`. Render asks for the secrets
+when you create the Blueprint. A free uptime ping (e.g. cron-job.org every 10 minutes) keeps the service awake.
 
 ## Limits (it's a hackathon build)
 

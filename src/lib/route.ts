@@ -18,6 +18,18 @@ async function parse<T>(req: Request, schema: z.ZodType<T>) {
   return parsed.success ? { data: parsed.data } : { error: NextResponse.json({ error: z.prettifyError(parsed.error) }, { status: 400 }) };
 }
 
+/**
+ * The site's address as visitors see it, for links handed to agents. Behind a proxy (Render) the request URL
+ * is the internal address, so the forwarded host wins over it; a configured HOLDFAST_PUBLIC_URL wins over both.
+ */
+export function publicOrigin(req: Request, configured = process.env.HOLDFAST_PUBLIC_URL) {
+  if (configured) return configured.replace(/\/+$/, "");
+  const url = new URL(req.url);
+  const first = (name: string) => req.headers.get(name)?.split(",")[0].trim();
+  const host = first("x-forwarded-host");
+  return host ? `${first("x-forwarded-proto") ?? url.protocol.replace(":", "")}://${host}` : url.origin;
+}
+
 /** For routes without a token, e.g. POST /api/gigs. */
 export function handle<T>(schema: z.ZodType<T>, fn: (body: T) => Promise<unknown>) {
   return async (req: Request) => {
