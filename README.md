@@ -11,6 +11,20 @@ recommends how much to release: all, part, or none.
 **Live demo:** [holdfast-6ws6.onrender.com](https://holdfast-6ws6.onrender.com) (PayPal sandbox; no real money moves).
 It runs on a free plan, so the first visit after a quiet spell can take up to a minute to wake.
 
+### Try it (judges)
+
+The payment step needs a PayPal sandbox buyer account. Judges: the login is in the judge guide attached to the
+Devpost submission. Anyone else can use a US **personal** account from their own
+[PayPal sandbox](https://developer.paypal.com/dashboard/accounts).
+
+1. **As the client:** on the live demo, fill in **Hire someone** with any job, amount and freelancer email.
+   Gemini drafts a checklist; answer its questions, then **Looks right, continue to payment**.
+2. **Pay with PayPal** using the sandbox buyer. PayPal holds the amount; nothing is charged.
+3. **As the freelancer:** copy the freelancer link from the client page, open it in a private window, and submit
+   `https://github.com/vercel/ms` (scores high) or any link of your own. Watch the AI check it live.
+4. **Back as the client:** read the verdict and evidence, then **Approve and pay**, **Adjust amount** (0% voids the
+   hold), or **Request changes**.
+
 ## How it works
 
 1. **Agree.** The client describes the job. The AI turns it into a weighted checklist and flags unclear points.
